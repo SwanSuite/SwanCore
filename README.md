@@ -1,1 +1,1 @@
-# SwanCore
+![Logo](SwanCore.png)
