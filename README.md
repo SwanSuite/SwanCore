@@ -9,8 +9,9 @@ The product is heavily tailored for commercial and industrial-grade software eng
 ## 🏗 Documentation Localization
 
 The complete setup of granular technical markdown documentation files is fully localized. You can review the localized branches within the repository structure:
-* 🇺🇸 **English Version**: `Documentation/en/`
-* 🇷🇺 **Russian Version**: `Documentation/ru/`
+
+* 🇺🇸 **English Version**: [Documentation/en/](Documentation/en/)
+* 🇷🇺 **Russian Version**: [Documentation/ru/](Documentation/ru/)
 
 ---
 
