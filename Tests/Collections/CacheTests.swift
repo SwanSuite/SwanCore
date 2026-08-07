@@ -10,20 +10,26 @@ import Testing
 import Foundation
 @testable import SwanCore
 
+struct TestModel: Sendable {
+    let payload: String
+    init(_ payload: String) { self.payload = payload }
+}
+
 @Suite("Cache Subscript Storage Tests")
 struct CacheTests {
 
     @Test("Test basic subscript access: write, read, and delete")
     func testBasicSubscriptAccess() {
-        let stringCache = Cache<String, NSString>()
+        // Используем нашу Sendable-модель вместо NSString
+        let stringCache = Cache<String, TestModel>()
 
         // 1. Проверяем запись и чтение
-        stringCache["key_1"] = "SwanSuite_Value"
-        #expect(stringCache["key_1"] == "SwanSuite_Value")
+        stringCache["key_1"] = TestModel("SwanSuite_Value")
+        #expect(stringCache["key_1"]?.payload == "SwanSuite_Value")
 
         // 2. Проверяем обновление значения
-        stringCache["key_1"] = "Updated_Value"
-        #expect(stringCache["key_1"] == "Updated_Value")
+        stringCache["key_1"] = TestModel("Updated_Value")
+        #expect(stringCache["key_1"]?.payload == "Updated_Value")
 
         // 3. Проверяем ручное удаление через nil
         stringCache["key_1"] = nil
@@ -32,10 +38,10 @@ struct CacheTests {
 
     @Test("Test cache clear method flushes store immediately")
     func testCacheClearBehavior() {
-        let testCache = Cache<Int, NSString>()
+        let testCache = Cache<Int, TestModel>()
 
-        testCache[1] = "One"
-        testCache[2] = "Two"
+        testCache[1] = TestModel("One")
+        testCache[2] = TestModel("Two")
 
         testCache.clear()
 

@@ -9,7 +9,7 @@
 import Foundation
 
 /// A protocol for objects that can express their mathematical resource cost weight within a cache environment.
-public protocol Costable {
+public protocol Costable: Sendable {
 
     /// The specific resource cost weight units (e.g., total bytes, image pixels count) allocated by this instance.
     var cost: Int { get }
@@ -36,14 +36,14 @@ public protocol Costable {
 ///     print("Extracted cached token payload: \(token)")
 /// }
 /// ```
-public final class Cache<Key: Hashable, Value: AnyObject>: Sendable {
+public final class Cache<Key: Hashable, Value: Sendable>: Sendable {
 
     /// A thread-safe closure block signature invoked when an object is about to be evicted from the store.
     public typealias ValueHandler = @Sendable (Value) -> Void
 
     // MARK: - Private Core Configurations
 
-    private let cache = NSCache<KeyAdapter<Key>, Value>()
+    private let cache = NSCache<KeyAdapter<Key>, ValueWrapper<Value>>()
     private let delegateProxy: DelegateHandler?
 
     /// Instantiates a clean, thread-safe in-memory cache registry container with an eviction interceptor closure.
@@ -61,11 +61,11 @@ public final class Cache<Key: Hashable, Value: AnyObject>: Sendable {
     /// - Returns: The cached element object of type `Value`, or `nil` if the entry is missing or was evicted.
     public subscript(key: Key) -> Value? {
         get {
-            cache.object(forKey: KeyAdapter(key))
+            cache.object(forKey: KeyAdapter(key))?.value
         }
         set {
             if let newValue {
-                cache.setObject(newValue, forKey: KeyAdapter(key))
+                cache.setObject(ValueWrapper(newValue), forKey: KeyAdapter(key))
             } else {
                 cache.removeObject(forKey: KeyAdapter(key))
             }
@@ -102,18 +102,18 @@ extension Cache where Value: Costable {
     /// - Returns: The costable cached element object of type `Value`, or `nil` if not present.
     public subscript(key: Key) -> Value? {
         get {
-            cache.object(forKey: KeyAdapter(key))
+            cache.object(forKey: KeyAdapter(key))?.value
         }
         set {
-            if let newValue {
-                if totalCostLimit != 0 {
-                    cache.setObject(newValue, forKey: KeyAdapter(key), cost: newValue.cost)
-                } else {
-                    cache.setObject(newValue, forKey: KeyAdapter(key))
-                }
-            } else {
+            guard let newValue else {
                 cache.removeObject(forKey: KeyAdapter(key))
+                return
             }
+            guard totalCostLimit != 0 else {
+                cache.setObject(ValueWrapper(newValue), forKey: KeyAdapter(key))
+                return
+            }
+            cache.setObject(ValueWrapper(newValue), forKey: KeyAdapter(key), cost: newValue.cost)
         }
     }
 }
@@ -126,22 +126,31 @@ extension NSCache: @unchecked @retroactive Sendable {}
 
 /// An internal type-eraser object hash adapter bridging native Swift `Hashable` structures into Objective-C `NSObject` pointers.
 private final class KeyAdapter<T: Hashable>: NSObject {
-    let value: T
+    let key: T
 
-    init(_ value: T) {
-        self.value = value
+    init(_ key: T) {
+        self.key = key
         super.init()
     }
 
     override func isEqual(_ object: Any?) -> Bool {
         guard let other = object as? KeyAdapter<T> else { return false }
-        return self.value == other.value
+        return self.key == other.key
     }
 
     override var hash: Int {
         var hasher = Hasher()
-        hasher.combine(value)
+        hasher.combine(key)
         return hasher.finalize()
+    }
+}
+
+private final class ValueWrapper<T: Sendable>: NSObject, Sendable {
+    let value: T
+
+    init(_ value: T) {
+        self.value = value
+        super.init()
     }
 }
 
@@ -157,8 +166,8 @@ private extension Cache {
         }
 
         func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: Any) {
-            guard let value = obj as? Value else { return }
-            handler(value)
+            guard let value = obj as? ValueWrapper<Value> else { return }
+            handler(value.value)
         }
     }
 }
