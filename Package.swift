@@ -30,18 +30,12 @@ let package = Package(
         .target(
             name: "SwanCore",
             dependencies: [],
-            path: "Sources",
-            swiftSettings: [
-                .enableComingFeature("StrictConcurrency")
-            ]
+            path: "Sources"
         ),
         .testTarget(
             name: "SwanCoreTests",
             dependencies: ["SwanCore"],
-            path: "Tests",
-            swiftSettings: [
-                .enableComingFeature("StrictConcurrency")
-            ]
+            path: "Tests"
         )
     ]
 )

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 // MARK: - Operator Definition
 
@@ -133,16 +134,26 @@ extension Int64: Emptyable {}
 @available(iOS 18.0, macOS 15.0, tvOS 18.0, watchOS 10.0, *)
 extension Int128: Emptyable {}
 
-// MARK: - Core Graphics
+// MARK: - FloatingPoint Universal Automation
 
-import CoreGraphics
+public extension FloatingPoint where Self: Emptyable {
 
-extension CGFloat: Emptyable {
-    /// Evaluates whether the current scalar floating-point value is exactly equal to zero.
-    @inlinable public var isEmpty: Bool { self == .zero }
-    /// Returns the standard structural floating-point fallback identity constant `.zero` (0.0).
-    @inlinable public static var empty: Self { .zero }
+    /// Evaluates whether the current floating-point instance value is equal to zero.
+    @inlinable
+    var isEmpty: Bool { self == .zero }
+
+    /// Returns the standard default fallback floating-point identity `.zero` (0.0).
+    @inlinable
+    static var empty: Self { .zero }
 }
+
+// MARK: - Explicit FloatingPoint Registrations
+
+extension Float: Emptyable {}
+extension Double: Emptyable {}
+extension CGFloat: Emptyable {}
+
+// MARK: - Core Graphics Structures
 
 extension CGPoint: Emptyable {
     /// Evaluates whether the current physical point matches the absolute logical coordinate origin `.zero`.
