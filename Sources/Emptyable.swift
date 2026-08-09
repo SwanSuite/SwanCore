@@ -18,10 +18,7 @@ postfix operator ~!
 ///
 /// Types conforming to `Emptyable` provide a uniform way to check if an instance is empty
 /// and define a standard static default instance representing emptiness.
-///
-/// ### Swift 6 Concurrency
-/// Inherits from `Sendable` to guarantee thread-safe transfers across concurrent task boundaries.
-public protocol Emptyable: Sendable {
+public protocol Emptyable {
 
     /// A Boolean value indicating whether the instance is empty.
     var isEmpty: Bool { get }
