@@ -48,13 +48,13 @@ struct JSONDecodingExtTests {
     func testConvenienceInitializersAndBuilders() {
 
         let decoder1 = JSONDecoder(strategy: JSONDecoder.KeyDecodingStrategy.convertFromSnakeCase)
-        guard case .convertFromSnakeCase = decoder1.keyDecodingStrategy else {
+        if case .convertFromSnakeCase = decoder1.keyDecodingStrategy {} else {
             Issue.record("Key decoding strategy does not match .convertFromSnakeCase")
         }
 
         // 2. Тестируем инициализатор стратегии дат
         let decoder2 = JSONDecoder(strategy: JSONDecoder.DateDecodingStrategy.iso8601)
-        guard case .iso8601 = decoder2.dateDecodingStrategy else {
+        if case .iso8601 = decoder2.dateDecodingStrategy {} else {
             Issue.record("Date decoding strategy does not match .iso8601")
         }
 
@@ -63,15 +63,15 @@ struct JSONDecodingExtTests {
             .dateDecodingStrategy(.millisecondsSince1970)
             .dataDecodingStrategy(.base64)
 
-        guard case .useDefaultKeys = configuredDecoder.keyDecodingStrategy else {
+        if case .useDefaultKeys = configuredDecoder.keyDecodingStrategy {} else {
             Issue.record("Fluent builder failed to set .useDefaultKeys")
         }
 
-        guard case .millisecondsSince1970 = configuredDecoder.dateDecodingStrategy else {
+        if case .millisecondsSince1970 = configuredDecoder.dateDecodingStrategy {} else {
             Issue.record("Fluent builder failed to set .millisecondsSince1970")
         }
 
-        guard case .base64 = configuredDecoder.dataDecodingStrategy else {
+        if case .base64 = configuredDecoder.dataDecodingStrategy {} else {
             Issue.record("Fluent builder failed to set .base64")
         }
     }

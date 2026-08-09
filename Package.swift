@@ -5,7 +5,7 @@
 //  SwanCore
 //
 //  Created by Stanislav Pletnev on 2026-07-31.
-//  Copyright © 2026 Anobisoft. Licensed under the MIT License.
+//  Copyright © 2026 SwanSuite. Licensed under the MIT License.
 //
 
 import PackageDescription
