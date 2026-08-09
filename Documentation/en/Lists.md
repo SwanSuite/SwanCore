@@ -1,77 +1,34 @@
-# Двусвязные списки (WeakList & RetainList)
+## The L-Shape Mnemonics (Data Flow Geography)
 
-Компонент `List` предоставляет потокобезопасную, высокопроизводительную реализацию классического двусвязного списка (`Double Linked List`), адаптированную под жесткие требования Swift 6 Strict Concurrency.
+To reconcile the vertical nature of a **Stack** (LIFO) and the horizontal nature of a **Queue** (FIFO) within a single unified data structure, this framework introduces the geometric **L-Shape Metaphor**. 
 
-## ✨ Ключевые особенности
-* **Две стратегии удержания**:
-  * `RetainList<Item>` — сильно удерживает элементы (`strong`). Оптимизирован для создания тяжелых и быстрых очередей (переваривает 500,000 нод менее чем за 0.5 секунды).
-  * `WeakList<Item>` — сохраняет элементы по слабой ссылке (`weak`). Идеален для списков делегатов или наблюдателей, чьим жизненным циклом управляет внешнее приложение.
-* **Ленивый автоматический клининг (Lazy Sweep)**: В `WeakList` при любом сквозном проходе или поиске (`forEach`, `first`) движок проверяет ноды. Если подлежащий объект был уничтожен ОС, нода списка автоматически и бесшумно вырезается из графа, поддерживая память в чистоте.
-* **Потоковый синтаксис (Custom Operators)**: Набор кастомных операторов позволяет лаконично управлять очередями в декларативном стиле.
+The letter **L** acts as a spatial anchor for memory, defining a strict two-dimensional geography for data flow.
 
----
-
-## 🏎️ Рантайм-оптимизация и Lock-Free чтение
-
-Архитектура списка спроектирована по гибридной модели синхронизации для обеспечения максимальной пропускной способности:
-
-1. **Изоляция мутаций (Spin-Lock)**: Все методы, физически перестраивающие топологию графа (`add`, `push`, `pop`, `remove`), защищены современным системным примитивом `OSAllocatedUnfairLock`. Это исключает состояние гонки (Data Races) при одновременной записи из разных потоков.
-2. **Lock-Free чтение (Без блокировок)**: Методы обхода списка (`forEach`, `first`) намеренно **освобождены от захвата лока**. Мутирующие методы написаны в строгой, математически выверенной последовательности переприсвоения указателей (`head`, `tail`, `next`, `prev`). Благодаря этому параллельный поток при живом итерационном обходе `while cursor != nil` гарантированно защищен от зацикливания или падения в `EXC_BAD_ACCESS`, даже если в этот же момент другой поток модифицирует узлы. 
-3. **Бескомпромиссный перформанс**: Отказ от постоянного захвата и освобождения блокировок на чтении устраняет накладные расходы рантайма, позволяя итерировать сотни тысяч элементов в режиме реального времени на «горячих» путях выполнения.
-
----
-
-## 🕹️ Шпаргалка по кастомным операторам (Stream API)
-
-Для списков перегружен набор атомарных операторов, превращающих работу со структурами в наглядный поток данных:
-
-| Оператор | Направление / Действие | Эквивалент в коде | Описание |
-| :--- | :--- | :--- | :--- |
-| **`list <+ object`** или **`list ++ object`** | В конец списка (Add / Append) | `list.add(element)` | Добавляет элемент в хвост очереди (`tail`). |
-| **`object +> list`** | В начало списка (Push / Prepend) | `list.push(element)` | Заталкивает элемент в голову очереди (`head`). |
-| **`^list`** | Из головы списка (Pop Prefix) | `list.pop()?.object` | Извлекает и возвращает первый элемент, уменьшая счетчик. |
-| **`object <<< list`** | Из головы в переменную (Pop to Var) | `object = ^list` | Извлекает первый элемент и сразу записывает его в инстанс. |
-| **`list >>> object`** | Из хвоста в переменную (Pop Tail) | `object = list.popTail()` | Извлекает последний элемент очереди и записывает в переменную. |
-
----
-
-## 🚀 Примеры использования
-
-### 1. Быстрая FIFO/LIFO queue (RetainList)
-```swift
-import SwanCore
-
-let queue = RetainList<Int>()
-
-// Наполнение очереди потоком
-queue <+ 10
-queue <+ 20
-30 +> queue // Протолкнули в самое начало
-
-print(queue.count) // 3
-
-// Извлечение элементов
-let first = ^queue // 30 (так как мы протолкнули его в начало)
-var next: Int?
-next <<< queue     // Извлекли 10 в переменную next
+```text
+       [ Head / Peak ]   <--- Vertical Axis (Stack View)
+              |               Elements are dropped from above:
+              +> [Item]       - Chained push: `30 +> 20 +> list`
+              |               - Head extraction hook: `^list`
+              |
+              |
+              |
+              +—————————————————— [ Tail / End ]   <--- Horizontal Axis (Queue View)
+                                         <+ [Item]      Elements append to the right:
+                                                        - Chained add: `list <+ 10 <+ 20`
+                                                        - Tail extraction hook: `list^`
 ```
 
-### 2. Безопасный список слушателей (WeakList)
-```swift
-import SwanCore
+### 1. The Vertical Axis: Head (Top of the Stack)
+The top-most vertex of the **L** represents the **Head** of the collection. It operates like a classic stack of documents where the most accessible item sits right at the peak.
+* **`+>` (Push)**: Data falls vertically into the top. Right-associativity allows intuitive stacking syntax (`30 +> 20 +> list` means `20` goes first, then `30` lands on top of it).
+* **`^list` (Prefix Pop)**: A vertical "hook" that lifts and pulls the top element off the peak.
 
-var list = WeakList<AnyObject>()
-var listener: AnyObject? = NSObject()
+### 2. The Horizontal Axis: Tail (End of the Queue)
+The bottom-right vector of the **L** represents the **Tail** of the collection. It operates like a standard queue or service line where new data arrives at the rear end.
+* **`<+` / `++` (Add / Append)**: Data attaches horizontally to the right tail. Left-associativity allows continuous pipeline flow (`list <+ 10 <+ 20`).
+* **`list^` (Postfix Pop Tail)**: A horizontal "hook" that snaps and detaches the very last element from the tail.
 
-list <+ listener!
-
-// ОС уничтожает объект в клиентском коде
-listener = nil 
-
-// При следующем обходе WeakList сам обнаружит "мертвую" ноду, 
-// безопасно удалит её из памяти и скорректирует свой .count
-list.forEach { activeListener in
-    // Сработает 0 раз, граф автоматически очищен
-}
-```
+### Precedence Rule Note
+In Swift, **postfix operators always take precedence over prefix operators**. 
+If you combine both hooks on a single list without parentheses (e.g., `^list^`), the compiler will strictly evaluate the **postfix tail hook first**, stripping the last element before any prefix operation occurs.
 
