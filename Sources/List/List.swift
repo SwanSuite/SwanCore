@@ -12,28 +12,27 @@ import Foundation
 // MARK: - RetainList Layout
 // ==========================================
 
+/// A concrete, strongly retained node structure fulfilling the bi-directional topology contract.
+public final class ListElement<I>: ListElementProtocol {
+    public typealias T = I
+
+    /// The guaranteed, non-optional business object payload instance.
+    public var object: T
+
+    public var next: ListElement?
+    public var prev: ListElement?
+
+    /// Designated node initializer enforcing non-optional payload injection.
+    required public init(_ object: T) {
+        self.object = object
+    }
+}
+
 /// A thread-safe, double-linked list managing nodes with strong reference retention.
 ///
 /// Modeled as a direct analog to C++ `std::list`. It guarantees that business objects
 /// remain pinned in memory as long as their containing nodes reside inside the sequence structure.
-public final class List<Item>: AbstractList<List.Element<Item>>, @unchecked Sendable {
-
-    /// A concrete, strongly retained node structure fulfilling the bi-directional topology contract.
-    public final class Element<I>: ListElement {
-        public typealias T = I
-
-        /// The guaranteed, non-optional business object payload instance.
-        public var object: T
-
-        public var next: Element?
-        public var prev: Element?
-
-        /// Designated node initializer enforcing non-optional payload injection.
-        required public init(_ object: T) {
-            self.object = object
-        }
-    }
-}
+public final class List<Item: Sendable, Lock: RWLocking>: AbstractList<ListElement<Item>, Lock>, @unchecked Sendable {}
 
 extension List: FrontModifiable, BackModifiable, ListIterator {}
 
@@ -47,36 +46,28 @@ extension List: FrontModifiable, BackModifiable, ListIterator {}
 /// Designed to track transient lifecycle resources safely. It encapsulates optional payloads
 /// inside an automated type-aliased layout contract, triggering O(1) inline lazy cleanup
 /// during linear traversal sweeps whenever tracked objects undergo deallocation outside the framework.
-public final class WeakList<Item: AnyObject>: AbstractList<WeakList.Element<Item>>, @unchecked Sendable {
+public final class WeakList<Item: AnyObject, Lock: RWLocking>: AbstractList<WeakListElement<Item>, Lock>, @unchecked Sendable {}
 
-    /// A concrete, weakly retained node structure tracking transient system memory resources.
-    public final class Element<I: AnyObject>: ListElement {
-        public typealias T = Optional<I>
+/// A concrete, weakly retained node structure tracking transient system memory resources.
+public final class WeakListElement<I: AnyObject & Sendable>: ListElementProtocol {
+    public typealias T = Optional<I>
 
-        /// The weakly retained business object payload bridge instance.
-        public weak var object: T
+    /// The weakly retained business object payload bridge instance.
+    public weak var object: T
 
-        public var next: Element?
-        public var prev: Element?
+    public var next: WeakListElement?
+    public var prev: WeakListElement?
 
-        /// Designated node initializer supporting implicit optional reference captures.
-        required public init(_ object: T) {
-            self.object = object
-        }
+    /// Designated node initializer supporting implicit optional reference captures.
+    required public init(_ object: T) {
+        self.object = object
     }
 }
 
-// ==========================================
-// MARK: - WeakList Element Traits
-// ==========================================
-
-extension WeakList.Element: Emptyable {
+extension WeakListElement: Emptiable {
 
     /// Evaluates to `true` if the referenced business object has been reclaimed by the runtime ARC subsystem.
     public var isEmpty: Bool { object == nil }
-
-    /// Generates a standardized empty zombie node stub to safely assist structural boundary recoveries.
-    public static var empty: WeakList<Item>.Element<I> { .init(nil) }
 }
 
 extension WeakList: FrontModifiable, BackModifiable, ListIterator {}
@@ -90,13 +81,11 @@ extension WeakList: FrontModifiable, BackModifiable, ListIterator {}
 ///
 /// Abstracts common state indicators like pointer anchors and capacities, delegating behavioral
 /// data injection, extraction, and memory model strategies to target type extensions.
-open class AbstractList<Element: ListElement>: @unchecked Sendable, ElementRemover, HasRWLock, HasCount {
+open class AbstractList<Element: ListElementProtocol, Lock: RWLocking>: @unchecked Sendable, ElementRemover, HasRWLock, HasCount {
     public typealias Direction = ListDirection
 
     /// Initializes a generic abstract list sequence protected by a consumed synchronization primitive.
-    public init(lock: consuming any RWLocking) {
-        self.lock = lock
-    }
+    public init() {}
 
     /// The root pointer anchor node of the double-linked sequence chain.
     public var head: Element?
@@ -111,20 +100,9 @@ open class AbstractList<Element: ListElement>: @unchecked Sendable, ElementRemov
     public var count: UInt = 0
 
     /// The shared-exclusive synchronization block managing internal thread isolation.
-    public let lock: any RWLocking
+    public let lock = Lock()
 
-    deinit { clear() }
-}
-
-
-// ==========================================
-// MARK: - Private Core Sweepers
-// ==========================================
-
-private extension AbstractList {
-
-    /// Completely tears down the double-linked list chain structure, breaking linkage circles to shield memory from ARC leaks.
-    func clear() {
+    deinit {
         var cursor = head
         tail = nil
         head = nil

@@ -13,22 +13,33 @@ import Foundation
 // ==========================================
 
 precedencegroup TailAppendPrecedence {
-    /// Left-associativity enables horizontal data pipelining from left to right: `list <+ 1 <+ 2`
+    /// Configures left-associative data flow to support horizontal linear pipelining.
+    ///
+    /// This precedence alignment allows items to be progressively appended to the tail
+    /// of a collection using a continuous left-to-right syntax chain: `list <+ 1 <+ 2`.
     associativity: left
     higherThan: AssignmentPrecedence
 }
 
+/// The tail-append infix operator driving fluent horizontal collection pipelines.
 infix operator <+: TailAppendPrecedence
 
 precedencegroup HeadPushPrecedence {
-    /// Right-associativity enables vertical data pipelining from right to left: `2 +> 1 +> list`
+    /// Configures right-associative data flow to support vertical stacked pipelining.
+    ///
+    /// This precedence alignment allows items to be progressively prepended to the head
+    /// of a collection using a right-to-left evaluation order: `2 +> 1 +> list`.
     associativity: right
     higherThan: AssignmentPrecedence
 }
 
+/// The head-push infix operator driving fluent vertical stacked pipelines.
 infix operator +>: HeadPushPrecedence
 
+/// The postfix boundary extraction operator optimized for tail-end slicing routines.
 postfix operator ^
+
+/// The prefix boundary extraction operator optimized for head-first popping routines.
 prefix operator ^
 
 
@@ -38,11 +49,13 @@ prefix operator ^
 
 public extension FrontAppendable where Self: BackAppendable {
 
-    /// Pushes a fully structural node into the collection at the specified boundary axis.
+    /// Pushes a pre-allocated structural node into the collection at the designated boundary target axis.
+    ///
+    /// Dynamically routes execution paths based on the runtime state of the provided `ModifyTarget`.
     ///
     /// - Parameters:
-    ///   - element: The pre-allocated node instance to insert.
-    ///   - target: The target structural axis boundary (`.front` or `.back`).
+    ///   - element: The pre-allocated structural node instance to link into the topology.
+    ///   - target: The explicit operational axis boundary layout (`.front` or `.back`).
     /// - Returns: A reference to the modified container `Self` to drive Fluent API pipelines.
     @discardableResult @inlinable @inline(__always)
     func push(_ element: Element, target: ModifyTarget) -> Self {
@@ -55,11 +68,11 @@ public extension FrontAppendable where Self: BackAppendable {
 
 public extension FrontAppendable where Self: BackAppendable, Element: ObjectContainer {
 
-    /// Automatically encapsulates a raw sendable business object and pushes it at the specified boundary axis.
+    /// Automatically encapsulates a raw sendable business object into a container node and inserts it at the specified boundary axis.
     ///
     /// - Parameters:
-    ///   - object: The non-optional thread-safe business payload item.
-    ///   - target: The target structural axis boundary (`.front` or `.back`).
+    ///   - object: The non-optional thread-safe business payload item to encapsulate.
+    ///   - target: The explicit operational axis boundary layout (`.front` or `.back`).
     /// - Returns: A reference to the modified container `Self` to drive Fluent API pipelines.
     @discardableResult @inlinable @inline(__always)
     func push(_ object: Element.T, target: ModifyTarget) -> Self {
@@ -72,10 +85,10 @@ public extension FrontAppendable where Self: BackAppendable, Element: ObjectCont
 
 public extension FrontRemovable where Self: BackRemovable {
 
-    /// Extracts and unlinks a structural node from the specified collection boundary axis.
+    /// Extracts and unlinks a raw structural element container wrapper from the targeted collection boundary axis.
     ///
-    /// - Parameter target: The target structural axis boundary (`.front` or `.back`).
-    /// - Returns: The unlinked node wrapper instance, or `nil` if the targeted boundary is empty.
+    /// - Parameter target: The explicit operational axis boundary layout (`.front` or `.back`).
+    /// - Returns: The completely unlinked node instance wrapper, or `nil` if the targeted collection boundary axis is empty.
     @discardableResult @inlinable @inline(__always)
     func pop(_ target: ModifyTarget) -> Element? {
         switch target {
@@ -87,10 +100,10 @@ public extension FrontRemovable where Self: BackRemovable {
 
 public extension FrontRemovable where Self: BackRemovable, Element: ObjectContainer {
 
-    /// Extracts a structural node from the specified boundary axis and unwraps its inner business payload.
+    /// Extracts a structural element container wrapper from the targeted axis boundary and safely unwraps its internal business payload.
     ///
-    /// - Parameter target: The target structural axis boundary (`.front` or `.back`).
-    /// - Returns: The sendable business object payload item, or `nil` if the targeted boundary is empty.
+    /// - Parameter target: The explicit operational axis boundary layout (`.front` or `.back`).
+    /// - Returns: The detached sendable business object payload item, or `nil` if the targeted collection boundary axis is empty.
     @discardableResult @inlinable @inline(__always)
     func pop(_ target: ModifyTarget) -> Element.T? {
         switch target {

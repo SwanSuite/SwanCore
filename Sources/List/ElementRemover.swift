@@ -47,6 +47,9 @@ public extension ElementRemover where Self: HasRWLock & HasCount {
             tail = element.prev
         }
 
+        element.next = nil
+        element.prev = nil
+
         count -= 1
         lock.unlock()
     }

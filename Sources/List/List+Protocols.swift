@@ -59,10 +59,10 @@ public protocol HasCount: AnyObject {
 // ==========================================
 
 /// A unified structural contract blueprint for a symmetric bi-directional list node topology.
-public protocol ListElement: ObjectContainer, BidirectionalConnection {}
+public protocol ListElementProtocol: ObjectContainer, BidirectionalConnection {}
 
 /// A structural contract blueprint for a linear, single-directional forward list node topology.
-public protocol ForwardListElement: ObjectContainer, ForwardConnection {}
+public protocol ForwardListElementProtocol: ObjectContainer, ForwardConnection {}
 
 // ==========================================
 // MARK: - ObjectContainer
