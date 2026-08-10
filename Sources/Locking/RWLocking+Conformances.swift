@@ -18,53 +18,20 @@ extension OSAllocatedUnfairLock: RWLocking where State == Void {
 
     /// Maps shared read access directly to the native exclusive lock path.
     @inlinable @inline(__always)
-    public func readLock() { lock() }
+    public borrowing func readLock() { lock() }
 
     /// Maps exclusive write access directly to the native exclusive lock path.
     @inlinable @inline(__always)
-    public func writeLock() { lock() }
+    public borrowing func writeLock() { lock() }
 
     /// Tries to acquire a shared read lock exclusively without blocking.
     @inlinable @inline(__always)
-    public func tryReadLock() -> Bool { lockIfAvailable() }
+    public borrowing func tryReadLock() -> Bool { lockIfAvailable() }
 
     /// Tries to acquire an exclusive write lock without blocking.
     @inlinable @inline(__always)
-    public func tryWriteLock() -> Bool { lockIfAvailable() }
+    public borrowing func tryWriteLock() -> Bool { lockIfAvailable() }
 }
-
-
-// ==========================================
-// MARK: - AdaptiveSpinLock Conformance
-// ==========================================
-
-/// Extends `AdaptiveSpinLock` to support the shared-exclusive (Read-Write) synchronization model.
-///
-/// **Exclusive Fallback Strategy:** Maps both shared read and exclusive write requests
-/// directly to the same underlying high-performance exclusive spin-then-block path.
-///
-/// This provides complete architectural compatibility with the `RWLocking` protocol while entirely
-/// eliminating separate read-write tracking overhead on systems where concurrent reading overhead
-/// outweighs execution length. Thanks to `@inline(__always)`, the static dispatch resolves
-/// directly into raw hardware atomic instructions at compile time.
-extension AdaptiveSpinLock: RWLocking {
-    /// Maps shared read access directly to the native exclusive lock path.
-    @inlinable @inline(__always)
-    public func readLock() { lock() }
-
-    /// Maps exclusive write access directly to the native exclusive lock path.
-    @inlinable @inline(__always)
-    public func writeLock() { lock() }
-
-    /// Tries to acquire a shared read lock exclusively without blocking.
-    @inlinable @inline(__always)
-    public func tryReadLock() -> Bool { lockIfAvailable() }
-
-    /// Tries to acquire an exclusive write lock without blocking.
-    @inlinable @inline(__always)
-    public func tryWriteLock() -> Bool { lockIfAvailable() }
-}
-
 
 // ==========================================
 // MARK: - PosixRWLock Conformance
@@ -82,20 +49,16 @@ public final class PosixRWLock: RWLocking, @unchecked Sendable {
 
     /// Initializes a new POSIX Read-Write lock with default attributes.
     @inlinable
-    public init() {
-        pthread_rwlock_init(&rwlock, nil)
-    }
+    public init() { pthread_rwlock_init(&rwlock, nil) }
 
     /// Cleans up the native OS resource upon lock destruction.
-    deinit {
-        pthread_rwlock_destroy(&rwlock)
-    }
+    deinit { pthread_rwlock_destroy(&rwlock) }
 
-    @inlinable @inline(__always) public func readLock() { pthread_rwlock_rdlock(&rwlock) }
-    @inlinable @inline(__always) public func writeLock() { pthread_rwlock_wrlock(&rwlock) }
-    @inlinable @inline(__always) public func unlock() { pthread_rwlock_unlock(&rwlock) }
-    @inlinable @inline(__always) public func tryReadLock() -> Bool { pthread_rwlock_tryrdlock(&rwlock) == 0 }
-    @inlinable @inline(__always) public func tryWriteLock() -> Bool { pthread_rwlock_trywrlock(&rwlock) == 0 }
+    @inlinable @inline(__always) public borrowing func readLock() { pthread_rwlock_rdlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func writeLock() { pthread_rwlock_wrlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func unlock() { pthread_rwlock_unlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func tryReadLock() -> Bool { pthread_rwlock_tryrdlock(&rwlock) == 0 }
+    @inlinable @inline(__always) public borrowing func tryWriteLock() -> Bool { pthread_rwlock_trywrlock(&rwlock) == 0 }
 }
 
 
@@ -114,9 +77,9 @@ public struct VoidRWLock: RWLocking {
     @inlinable
     public init() {}
 
-    @inlinable @inline(__always) public func readLock() {}
-    @inlinable @inline(__always) public func writeLock() {}
-    @inlinable @inline(__always) public func unlock() {}
-    @inlinable @inline(__always) public func tryReadLock() -> Bool { true }
-    @inlinable @inline(__always) public func tryWriteLock() -> Bool { true }
+    @inlinable @inline(__always) public borrowing func readLock() {}
+    @inlinable @inline(__always) public borrowing func writeLock() {}
+    @inlinable @inline(__always) public borrowing func unlock() {}
+    @inlinable @inline(__always) public borrowing func tryReadLock() -> Bool { true }
+    @inlinable @inline(__always) public borrowing func tryWriteLock() -> Bool { true }
 }

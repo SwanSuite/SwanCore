@@ -25,8 +25,8 @@ extension NSLock: Locking {
 
     /// Tries to acquire the standard lock instantly.
     @inlinable @inline(__always)
-    public func lockIfAvailable() -> Bool {
-        self.lock(before: Date())
+    public borrowing func lockIfAvailable() -> Bool {
+        self.try()
     }
 }
 
@@ -52,13 +52,13 @@ public final class PosixMutex: Locking, @unchecked Sendable {
     @inlinable deinit { pthread_mutex_destroy(&mutex) }
 
     @inlinable @inline(__always)
-    public func lock() { pthread_mutex_lock(&mutex) }
+    public borrowing func lock() { pthread_mutex_lock(&mutex) }
 
     @inlinable @inline(__always)
-    public func unlock() { pthread_mutex_unlock(&mutex) }
+    public borrowing func unlock() { pthread_mutex_unlock(&mutex) }
 
     @inlinable @inline(__always)
-    public func lockIfAvailable() -> Bool { pthread_mutex_trylock(&mutex) == 0 }
+    public borrowing func lockIfAvailable() -> Bool { pthread_mutex_trylock(&mutex) == 0 }
 }
 
 
@@ -70,7 +70,7 @@ public final class PosixMutex: Locking, @unchecked Sendable {
 @frozen public struct VoidLock: Locking, ~Copyable {
 
     @inlinable @inline(__always) public init() {}
-    @inlinable @inline(__always) public func lock() {}
-    @inlinable @inline(__always) public func unlock() {}
-    @inlinable @inline(__always) public func lockIfAvailable() -> Bool { true }
+    @inlinable @inline(__always) borrowing public func lock() {}
+    @inlinable @inline(__always) borrowing public func unlock() {}
+    @inlinable @inline(__always) borrowing public func lockIfAvailable() -> Bool { true }
 }

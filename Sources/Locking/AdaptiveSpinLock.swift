@@ -9,6 +9,37 @@
 import Foundation
 import os
 
+/// A structural configuration contract defining static spin-loop threshold limits.
+public protocol SpinThreshold {
+    /// The static maximum number of active CPU spinning attempts allowed before forcing thread suspension.
+    static var attemptsMax: UInt { get }
+}
+
+/// Tailored for workloads with little to no thread collisions.
+///
+/// Since concurrent clashes are rare, threads can aggressively spin longer in user-space,
+/// effectively factoring out the heavy overhead of native OS kernel-level thread suspension context switches.
+public enum LazyContention: SpinThreshold { public static var attemptsMax: UInt { 10000 } }
+
+/// Tailored for standard, evenly distributed application workloads.
+///
+/// Balances active user-space CPU spinning with timely fallback thread suspension thresholds
+/// under standard asynchronous operation routing environments.
+public enum NormalContention: SpinThreshold { public static var attemptsMax: UInt { 1000 } }
+
+/// Tailored for heavily shared system resources experiencing notable thread traffic collisions.
+///
+/// Caps active spinning early to mitigate aggressive cache-line bouncing defects,
+/// keeping the shared memory bus clean for the active thread currently executing the critical section.
+public enum HeavyContention: SpinThreshold { public static var attemptsMax: UInt { 100 } }
+
+/// Tailored for hotspot execution pipelines experiencing massive, saturated parallel thread traffic.
+///
+/// Active user-space spinning under extreme congestion is highly counterproductive. Threads yield
+/// almost immediately to the OS scheduler fallback path to prevent CPU starving and zero-benefit thermal throttling.
+public enum ExtremeContention: SpinThreshold { public static var attemptsMax: UInt { 10 } }
+
+
 /// An ultra-fast, non-copyable stack-allocated structural lock with OS backward compatibility.
 ///
 /// Automatically scales based on the host OS capability:
@@ -19,72 +50,50 @@ import os
 ///
 /// Being a non-copyable structure (`~Copyable`), it incurs zero heap allocation overhead
 /// while explicitly restricting any bitwise memory replication attempts at compile time.
-@frozen
-public struct AdaptiveSpinLock: Locking, ~Copyable {
+public final class AdaptiveSpinLock<T: SpinThreshold> : Locking {
 
-    @usableFromInline internal let underlying: OSAllocatedUnfairLock<Void>
+    /// The native OS unfair lock instance driving the synchronization core.
+    @usableFromInline internal let underlying = OSAllocatedUnfairLock()
 
-    /// The maximum number of spin attempts allowed on fallback OS targets before suspending the thread.
-    /// Ignored completely on modern OS targets supporting native adaptive spinning.
-    @usableFromInline internal let attemptsMax: Int
+    @inlinable public init() {}
 
-    /// Initializes a new unique instance of `AdaptiveSpinLock` with standard default settings.
+    /// Acquires the lock exclusively. Blocks the calling thread if already held.
     ///
-    /// Available on all OS deployment targets. Automatically applies native hardware adaptive spinning
-    /// on newer platforms, and falls back to a safe 100-cycle software spinning threshold on older ones.
-    @inlinable
-    public init() {
-        self.underlying = OSAllocatedUnfairLock()
-        self.attemptsMax = 100
-    }
-
-    /// Initializes a new unique instance of `AdaptiveSpinLock` with a customizable software spinning threshold.
-    ///
-    /// Available as a fallback configuration or explicit override for older operating system targets.
-    /// Deprecated on modern deployment targets where hardware adaptive spinning renders manual adjustments obsolete.
-    /// - Parameter attemptsMax: The limit of active CPU spin loop cycles before forcing thread suspension. Defaults to 100.
-    @available(macOS, deprecated: 15.0, message: "Manual spinning thresholds are ignored on macOS 15.0+; use the parameterless init() instead.")
-    @available(iOS, deprecated: 18.0, message: "Manual spinning thresholds are ignored on iOS 18.0+; use the parameterless init() instead.")
-    @available(tvOS, deprecated: 18.0, message: "Manual spinning thresholds are ignored on tvOS 18.0+; use the parameterless init() instead.")
-    @available(watchOS, deprecated: 11.0, message: "Manual spinning thresholds are ignored on watchOS 11.0+; use the parameterless init() instead.")
-    @available(visionOS, deprecated: 2.0, message: "Manual spinning thresholds are ignored on visionOS 2.0+; use the parameterless init() instead.")
-    @inlinable
-    public init(attemptsMax: Int) {
-        self.underlying = OSAllocatedUnfairLock()
-        self.attemptsMax = attemptsMax
-    }
-
+    /// Employs a zero-overhead `while` loop configuration on fallback OS targets to eliminate hidden
+    /// iterator allocations and branch mispredictions, running directly on raw CPU registers.
     @inlinable @inline(__always)
-    public func lock() {
+    public borrowing func lock() {
         if #available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
             underlying.lock(flags: .adaptiveSpin)
         } else {
-            // Software simulated "Spin-then-Block" strategy
-            let maxThreshold = attemptsMax
-            for _ in 0..<maxThreshold {
-                if underlying.lockIfAvailable() {
-                    return // Lock acquired successfully during the spin phase
+            var maxThreshold = T.attemptsMax
+            while !underlying.lockIfAvailable() {
+                maxThreshold -= 1
+                if maxThreshold == 0 {
+                    underlying.lock()
+                    return
                 }
             }
-
-            // Fallback to absolute thread suspension if the spin phase timed out
-            underlying.lock()
         }
     }
 
+    /// Releases the exclusive lock uniformly.
     @inlinable @inline(__always)
-    public func unlock() {
-        underlying.unlock()
-    }
+    public borrowing func unlock() { underlying.unlock() }
 
+    /// Tries to acquire the exclusive lock without blocking the calling thread.
+    ///
+    /// - Returns: `true` if the lock was successfully acquired; otherwise, `false`.
     @inlinable @inline(__always)
-    public func lockIfAvailable() -> Bool {
-        underlying.lockIfAvailable()
-    }
+    public borrowing func lockIfAvailable() -> Bool { underlying.lockIfAvailable() }
 
-    /// Executes a closure within an exclusive critical section driven by adaptive spinning.
-    @discardableResult @inlinable @inline(__always)
-    public func withLock<R: Sendable>(_ body: @Sendable () throws -> R) rethrows -> R {
+    /// Executes a closure within an exclusive critical section guaranteed by the non-copyable lock.
+    ///
+    /// - Parameter body: A throwing, isolated closure containing the critical operations.
+    /// - Returns: The strictly sendable result of the closure.
+    /// - Throws: Re-throws any error generated by the provided closure.
+    @discardableResult @inline(__always)
+    public borrowing func withLock<R: Sendable>(_ body: @Sendable () throws -> R) rethrows -> R {
         if #available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
             return try underlying.withLock(flags: .adaptiveSpin, body)
         } else {
@@ -93,4 +102,32 @@ public struct AdaptiveSpinLock: Locking, ~Copyable {
             return try body()
         }
     }
+}
+
+
+/// Extends `AdaptiveSpinLock` to support the shared-exclusive (Read-Write) synchronization model.
+///
+/// **Exclusive Fallback Strategy:** Maps both shared read and exclusive write requests
+/// directly to the same underlying high-performance exclusive spin-then-block path.
+///
+/// This provides complete architectural compatibility with the `RWLocking` protocol while entirely
+/// eliminating separate read-write tracking overhead on systems where concurrent reading overhead
+/// outweighs execution length. Thanks to `@inline(__always)`, the static dispatch resolves
+/// directly into raw hardware atomic instructions at compile time.
+extension AdaptiveSpinLock: RWLocking {
+    /// Maps shared read access directly to the native exclusive lock path.
+    @inlinable @inline(__always)
+    public borrowing func readLock() { lock() }
+
+    /// Maps exclusive write access directly to the native exclusive lock path.
+    @inlinable @inline(__always)
+    public borrowing func writeLock() { lock() }
+
+    /// Tries to acquire a shared read lock exclusively without blocking.
+    @inlinable @inline(__always)
+    public borrowing func tryReadLock() -> Bool { lockIfAvailable() }
+
+    /// Tries to acquire an exclusive write lock without blocking.
+    @inlinable @inline(__always)
+    public borrowing func tryWriteLock() -> Bool { lockIfAvailable() }
 }
