@@ -17,8 +17,8 @@ The complete setup of granular technical markdown documentation files is fully l
 
 ## 🧩 Core Suite Modules Overview
 
-### 1. ⚙️ Base Primitives ([Emptyable.md](Documentation/en/Emptyable.md))
-Introduces the formal concept of logical object emptiness via the `Emptyable` protocol and provides highly optimized shorthand operators:
+### 1. ⚙️ Base Primitives ([Emptiable.md](Documentation/en/Emptiable.md))
+Introduces the formal concept of logical object emptiness via the `Emptiable` protocol and provides highly optimized shorthand operators:
 * **`~! `** (postfix unwrap) — provides bulletproof optional extraction by falling back to the type's default empty state identity without crashing the runtime (`nilInt~! == 0`).
 * **`~? `** (infix merging) — linear fluent fallback chaining evaluating alternative values if the left-hand operand is empty (`"" ~? "fallback" == "fallback"`). Incorporates tailored vector math optimizations for structural `CGRect` configurations.
 

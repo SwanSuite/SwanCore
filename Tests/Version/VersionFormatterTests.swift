@@ -1,8 +1,8 @@
 //
 //  VersionFormatterTests.swift
-//  SwanCore
+//  SwanCoreTests
 //
-//  Created by Stanislav Pletnev on 2026-07-16.
+//  Created by Stanislav Pletnev on 2026-08-10.
 //  Copyright © 2026 Anobisoft. Licensed under the MIT License.
 //
 
@@ -10,66 +10,122 @@ import Testing
 import Foundation
 @testable import SwanCore
 
-@Suite("VersionFormatter Isolated Isolation Suite")
+// MARK: - Equatable Conformance for Validation Errors
+
+extension VersionFormatter.ValidationError: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.unbalancedBrackets, .unbalancedBrackets):
+            return true
+        case (.invalidToken(let lToken), .invalidToken(let rToken)):
+            return lToken == rToken
+        default:
+            return false
+        }
+    }
+}
+
+// MARK: - Mock Provider Infrastructure
+
+private struct MockProvider: VersionComponentProvider {
+    let storage: [String: String]
+
+    func value(for token: String) -> VersionComponent? {
+        return storage[token]
+    }
+}
+
+// MARK: - Suite 1: Syntax and Base Rendering
+
+@Suite("VersionFormatter Syntax and Base Rendering Tests")
 struct VersionFormatterTests {
 
-    // MARK: - Predefined Static Formatters Evaluation
+    @Test("Verify template compilation success and strict validation exceptions")
+    func templateCompilationAndValidation() {
+        // Valid structural pattern strings should compile smoothly
+        #expect(throws: Never.self) { try VersionFormatter(format: "%MJ.%MN.%P") }
+        #expect(throws: Never.self) { try VersionFormatter(format: "v%MJ[.%MN][-%SI]") }
+        #expect(throws: Never.self) { try VersionFormatter(format: "[%SI|%SV]") }
 
-    @Test("Formatter: Compilation of standard predefined system style presets")
-    func testIsolatedPredefinedFormatters() {
-        let v = Version(major: 1, minor: 2, patch: 3, preReleaseIdentifier: .releaseCandidate, preReleaseVersion: 1, build: 45)
+        // Invalid: Unbalanced or orphaned square brackets
+        #expect(throws: VersionFormatter.ValidationError.unbalancedBrackets) {
+            try VersionFormatter(format: "v%MJ[.%MN")
+        }
+        #expect(throws: VersionFormatter.ValidationError.unbalancedBrackets) {
+            try VersionFormatter(format: "v%MJ.%MN]")
+        }
 
-        #expect(VersionFormatter.short.string(from: v) == "1.2.3")
-        #expect(VersionFormatter.medium.string(from: v) == "v1.2.3-rc1+b45")
-        #expect(VersionFormatter.semVer.string(from: v) == "1.2.3-rc.1")
-        #expect(VersionFormatter.long.string(from: v) == "version 1.2.3-rc.1 build 45")
-        #expect(VersionFormatter.appleBundle.string(from: v) == "1.2.3")
+        // Invalid: Empty percent token marker indicator sequence
+        #expect(throws: VersionFormatter.ValidationError.invalidToken("%")) {
+            try VersionFormatter(format: "version %")
+        }
     }
 
-    // MARK: - Optional Bracket Pruning & Fallback Verification
+    @Test("Verify flat root-level formatting and default zero fallbacks")
+    func flatRootLevelFormatting() throws {
+        let provider = MockProvider(storage: ["MJ": "1", "MN": "2"])
 
-    @Test("Formatter: Comprehensive evaluation of structural nil and empty component pruning")
-    func testPruningNilComponents() {
-        let vMinimal = Version(major: 2, minor: nil, patch: nil, preReleaseIdentifier: .release, preReleaseVersion: nil, build: nil)
+        let formatter1 = try VersionFormatter(format: "%MJ.%MN")
+        #expect(formatter1.string(from: provider) == "1.2")
 
-        #expect(VersionFormatter.short.string(from: vMinimal) == "2")
-        #expect(VersionFormatter.medium.string(from: vMinimal) == "v2.0")
-        #expect(VersionFormatter.appleBundle.string(from: vMinimal) == "2.0.0")
+        let formatter2 = try VersionFormatter(format: "%MJ.%MN.%P")
+        #expect(formatter2.string(from: provider) == "1.2.0")
+    }
+}
 
-        let vPartial = Version(major: 1, minor: 4, patch: nil)
-        #expect(VersionFormatter.appleBundle.string(from: vPartial) == "1.4.0")
-        #expect(VersionFormatter.semVer.string(from: vPartial) == "1.4.0")
+// MARK: - Suite 2: Hierarchical Rules and Selection Logic
 
-        let vWithBuildOnly = Version(major: 1, minor: 1, preReleaseIdentifier: .release, build: 99)
-        #expect(VersionFormatter.medium.string(from: vWithBuildOnly) == "v1.1+b99")
+@Suite("VersionFormatter Hierarchical Rules and Selection Logic")
+struct VersionFormatterLogicTests {
+
+    // MARK: - Hierarchical Brackets (AND/OR) Tests
+
+    @Test("Verify custom hierarchical rules (AND/OR) for nested brackets")
+    func nestedBracketsLogic() throws {
+        // Case 1: Active single-token anchor on current level (%MN). Value exists -> block is operational.
+        let provider1 = MockProvider(storage: ["MJ": "1", "MN": "0"]) // patch is nil
+        let formatter1 = try VersionFormatter(format: "v%MJ[.%MN[.%P]]")
+        #expect(formatter1.string(from: provider1) == "v1.0")
+
+        // Case 2: Level anchor (%MN) is missing -> entire optional root block is instantly pruned,
+        // despite the fact that nested child property (%P) actively exists.
+        let provider2 = MockProvider(storage: ["MJ": "1", "P": "3"]) // minor is nil
+        #expect(formatter1.string(from: provider2) == "v1")
+
+        // Case 3: Multiple immediate layout tokens on active layer (%SI and %SV). Triggers ALL (AND) Strategy.
+        // Both tokens exist -> entire group boundary renders seamlessly.
+        let provider3 = MockProvider(storage: ["MJ": "1", "MN": "2", "P": "3", "SI": "rc", "SV": "1"])
+        let formatter2 = try VersionFormatter(format: "%MJ.%MN.%P[[- %SI].%SV]")
+        #expect(formatter2.string(from: provider3) == "1.2.3- rc.1")
+
+        // Case 4: Triggers ALL (AND) Strategy. One immediate flat token (%SV) is completely missing ->
+        // parent group node is wiped out to prevent trailing/orphaned delimiters.
+        let provider4 = MockProvider(storage: ["MJ": "1", "MN": "2", "P": "3", "SI": "rc"]) // SV is nil
+        #expect(formatter2.string(from: provider4) == "1.2.3")
     }
 
-    // MARK: - Custom Layout & Nested Matching Verification
+    // MARK: - Mutually Exclusive Selection (Select/Pipe) Tests
 
-    @Test("Formatter: Comprehensive validation of custom pattern templates and nested layout structures")
-    func testIsolatedCustomLayoutTemplates() {
-        let v = Version(major: 4, minor: 2, preReleaseIdentifier: .beta, preReleaseVersion: 7, build: 88)
+    @Test("Verify strict One-Hot alternative selection via structural pipe operator")
+    func selectPipeLogic() throws {
+        // Alternative setup template: renders branch A (prerelease) OR branch B (technical build suffix)
+        let formatter = try VersionFormatter(format: "%MJ.%MN[.%P][[-%SI[.%SV]]|[ b%B]]")
 
-        let customFormatter1 = VersionFormatter(format: "[RELEASE: [RI] (vRV)]-b%B")
-        #expect(customFormatter1.string(from: v) == "RELEASE: beta (v7)-b88")
+        // Case A: Prerelease metadata exists -> leftmost choice branch activates cleanly
+        let providerA = MockProvider(storage: ["MJ": "1", "MN": "0", "SI": "rc", "SV": "1"])
+        #expect(formatter.string(from: providerA) == "1.0-rc.1")
 
-        let customFormatter2 = VersionFormatter(format: "System core %MJ.%MN.%P (Build %B)")
-        #expect(customFormatter2.string(from: v) == "System core 4.2.0 (Build 88)")
+        // Case B: Technical compilation identifier exists -> rightmost choice branch activates cleanly
+        let providerB = MockProvider(storage: ["MJ": "1", "MN": "0", "B": "12"])
+        #expect(formatter.string(from: providerB) == "1.0 b12")
 
-        let messyFormatter = VersionFormatter(format: "%MJ.[ - RI - ][ (vRV) ][ + bB ]")
-        #expect(messyFormatter.string(from: v) == "4. - beta -  (v7)  + b88 ")
+        // Case C: Conflict validation! Both branches evaluate to active state ->
+        // One-Hot strict layout constraints fail, collapsing entire .select node safely to empty stream.
+        let providerC = MockProvider(storage: ["MJ": "1", "MN": "0", "SI": "rc", "SV": "1", "B": "12"])
+        #expect(formatter.string(from: providerC) == "1.0")
 
-        let commitFormatter = VersionFormatter(format: "%MJ.%MN.%P[ - B]")
-        #expect(commitFormatter.string(from: v) == "4.2.0 - 88")
-    }
-
-    // MARK: - Extension Proximity Logic Evaluation
-
-    @Test("Helpers: Resolution confirmation of native structure formatted mapping proxies")
-    func testExtensionHelperMethods() {
-        let v = Version(major: 1, minor: 1, preReleaseIdentifier: .alpha, preReleaseVersion: 3)
-
-        #expect(v.formatted(.short) == "1.1")
-        #expect(v.formatted() == "v1.1-alpha3")
+        // Case D: Completely empty metadata fields -> zero branches active, node collapses safely
+        let providerD = MockProvider(storage: ["MJ": "1", "MN": "0"])
+        #expect(formatter.string(from: providerD) == "1.0")
     }
 }
