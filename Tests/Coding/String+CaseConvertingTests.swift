@@ -13,11 +13,11 @@ import Foundation
 @Suite("String Case Converting Utilities Validation Suite")
 struct StringCaseConvertingTests {
 
-    // MARK: - 1. Boundary & Emptyable States Validation
+    // MARK: - 1. Boundary & Emptiable States Validation
 
     @Test("Transcoding: Edge cases including completely empty string sequences")
     func testEmptyAndMinimalStrings() {
-        // Verification of Emptyable.empty state baseline behaviors
+        // Verification of Emptiable.empty state baseline behaviors
         let emptyText = String.empty
         #expect(emptyText.transcodeFirst { $0.uppercased() } == "")
         #expect(emptyText.upperFirst() == "")

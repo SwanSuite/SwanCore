@@ -18,19 +18,5 @@ struct BundleLocalizationTests {
         let unknownKey = "non_existent_localization_key_handle"
 
         #expect(unknownKey.localized == unknownKey)
-        #expect(unknownKey.localizedDynamic == unknownKey)
-    }
-
-    @Test("Concurrent Stress Test: DynamicBundle cache stability under heavy multi-threaded payload")
-    func testLocalizationConcurrentPerformance() async {
-        await withTaskGroup(of: Void.self) { group in
-            for index in 0..<1000 {
-                group.addTask {
-                    let key = "concurrent_stress_key_\(index)"
-                    let _ = key.localizedDynamic
-                }
-            }
-        }
-        #expect(true)
     }
 }

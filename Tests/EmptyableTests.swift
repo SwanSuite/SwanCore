@@ -1,5 +1,5 @@
 //
-//  EmptyableTests.swift
+//  EmptiableTests.swift
 //  SwanCore
 //
 //  Created by Stanislav Pletnev on 2026-07-16.
@@ -11,8 +11,8 @@ import Foundation
 import CoreGraphics
 @testable import SwanCore
 
-@Suite("Emptyable Protocol & Operators Tests")
-struct EmptyableTests {
+@Suite("Emptiable Protocol & Operators Tests")
+struct EmptiableTests {
 
     @Test("Test postfix unwrap operator (~!) for nil and values")
     func testPostfixUnwrapOperator() {

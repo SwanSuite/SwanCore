@@ -14,10 +14,10 @@ let package = Package(
     name: "SwanCore",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v16),
         .macOS(.v13),
-        .watchOS(.v9),
-        .tvOS(.v16)
+        .iOS(.v16),
+        .tvOS(.v16),
+        .watchOS(.v9)
     ],
     products: [
         .library(
