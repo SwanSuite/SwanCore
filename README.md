@@ -1,86 +1,59 @@
 ![Logo](SwanCore.png)
 
-**SwanCore** is a low-level, high-performance system toolkit serving as the fundamental backbone of the **SwanSuite** ecosystem. Built entirely in pure Swift, the package is optimized for maximum runtime velocity, deterministic memory footprint, and seamless integration with **Swift 6 Strict Concurrency** guarantees.
+[![Language](https://img.shields.io/badge/Language-%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-52B1F4.svg)](README.ru.md)
 
-The product is heavily tailored for commercial and industrial-grade software engineering where runtime resilience, predictable object graph behavior, and zero heap-allocation overhead are mission-critical requirements.
+A low-overhead, zero-dependency package providing lightweight data structures, types, and foundational extensions for Swift. The entire architecture is optimized for high throughput, minimal heap allocation, and absolute compile-time thread safety under the Swift 6 Strict Concurrency model.
 
----
-
-## 🏗 Documentation Localization
-
-The complete setup of granular technical markdown documentation files is fully localized. You can review the localized branches within the repository structure:
-
-* 🇺🇸 **English Version**: [Documentation/en/](Documentation/en/)
-* 🇷🇺 **Russian Version**: [Documentation/ru/](Documentation/ru/)
+The utilities are engineered to handle repetitive infrastructural routines while completely avoiding the overhead of runtime dynamic dispatch mechanisms.
 
 ---
 
-## 🧩 Core Suite Modules Overview
-
-### 1. ⚙️ Base Primitives ([Emptiable.md](Documentation/en/Emptiable.md))
-Introduces the formal concept of logical object emptiness via the `Emptiable` protocol and provides highly optimized shorthand operators:
-* **`~! `** (postfix unwrap) — provides bulletproof optional extraction by falling back to the type's default empty state identity without crashing the runtime (`nilInt~! == 0`).
-* **`~? `** (infix merging) — linear fluent fallback chaining evaluating alternative values if the left-hand operand is empty (`"" ~? "fallback" == "fallback"`). Incorporates tailored vector math optimizations for structural `CGRect` configurations.
-
-### 2. ⚡ Storage Structures & Collections ([Cache.md](Documentation/en/Cache.md) & [Lists.md](Documentation/en/Lists.md))
-A robust collection of thread-safe (`Sendable`) memory containers shielded via low-overhead native `OSAllocatedUnfairLock` engines:
-* **`Cache`** — a strongly-typed wrapper built over native `NSCache` integrating full cost-aware memory metric allocations (`Costable`) in bytes.
-* **`WeakDictionary`** — a hash-table mapping that retains its volatile values using weak references (`weak`), featuring lazy automated dead node purging during subscript lookups.
-* **`MapTable`** — a type-safe interface for `NSMapTable` designed to orchestrate complex reference relationship topologies (`weak-to-strong`, `strong-to-weak`).
-* **`WeakList` & `RetainList`** — thread-safe double linked lists utilizing streamlined streaming stream operators (`<+`, `+>`, `^`). Implements **Lock-Free Read Operations**, ensuring zero-lock parallel iterations across hundreds of thousands of active objects simultaneously.
-
-### 3. 📝 System Bundle Utilities ([BundleMetadata.md](Documentation/en/BundleMetadata.md) & [BundleLocalization.md](Documentation/en/BundleLocalization.md))
-High-speed introspection tools for extracting runtime metadata parameters from the active host application layer:
-* Instant typed access to bundle version tags, compilation build identifiers, and executable binary descriptors.
-* Dynamic on-the-fly localization string stream mapping featuring internal data-race prevention via atomic execution backtrace caching under `OSAllocatedUnfairLock`.
-
-### 4. 🔗 Registry Case Transformations & Serialization ([Coding.md](Documentation/en/Coding.md))
-Syntactic shorthand extensions for the native `Codable` ecosystem built entirely on compiler-level Type Inference loops:
-* Eliminates the boilerplate requirement of passing explicit `T.self` sequences during encoding or decoding steps.
-* Introduces a declarative Fluent API (Builder pattern) for clean, chained configuration of encoding engines.
-* Deploys custom extended registry strategies `.convertFromSnakeCaseExtended` and `.convertToScreamingSnakeCase` via the `CustomizableCodingKeyMapping` protocol layer, protecting custom `CodingKeys` rules from being overridden by default Apple Foundation behaviors.
-
-### 5. 🔬 Strict Data Validation ([DataValidation.md](Documentation/en/DataValidation.md))
-An atomic strategy-driven architecture optimizing text sequence checking metrics (Email addresses, International telephone lines, Hyperlinks):
-* Built on top of native `NSDataDetector` capabilities.
-* Enforces strict full-boundary checking constraints (`matchesFullBoundary`), successfully neutralizing false-positive match flags within polluted or dirty string buffers.
-* Inherits cross-isolation thread-safety and implements programmatic `Hashable` capabilities on custom identifier `id` sequences, allowing validators to serve as dictionary keys for dynamic error routing layouts in UI architectures.
-
-### 6. 🔀 Enum Representation Mapping ([DictionaryRawRepresentable.md](Documentation/en/DictionaryRawRepresentable.md))
-An advanced generic type resolution abstraction engine (`resolveRepresentation()`) orchestrating automated conversion loops for dictionaries bridging strict domain enums (`enum: RawRepresentable`) with primitive raw backing components. Implements bulletproof initialization sweeping to prune invalid nodes and unwrap optional chains. Includes a hyper-optimized `lazyCompactMapToDictionary` alternative for absolute zero-allocation pipelines.
-
-### 7. 💾 Industrial-Grade Persistence ([Storage.md](Documentation/en/Storage.md))
-A unified repository pattern abstraction (`PersistentStorage`) isolating raw data byte storage operations from dynamic entity construction loops:
-* Retroactively conforms standard `UserDefaults` registries to cleanly participate in flat configuration storage.
-* Implements a robust disk-bound atomic file engine `FileStorage` enforcing `.atomic` writing flags, guaranteeing that database queues remain shielded from file corruption during unexpected power-downs or device crashes in offline fields (battle-tested in mining inspection environments).
-
-### 8. 📌 Semantic Versioning Engine ([Version.md](Documentation/en/Version.md))
-A lossless metadata string parser and cascade evaluation mechanism (`Comparable`) prioritizing version layers alongside software pre-production lifecycle weights (`alpha < beta < rc < release`). Integrates a declarative pattern-matching layout compiler `VersionFormatter` built over regular expressions, supporting intelligent bracket block pruning `[...]` for missing fields.
+## 💻 Requirements & Environment
+* **Language constraints**: Swift 6.0+ (Strict Concurrency Ready)
+* **Minimum Platform Alignment**: iOS 16.0+ / macOS 13.0+ / tvOS 16.0+ / watchOS 9.0+
+* **Dependency Orchestration**: Swift Package Manager (SPM)
+* **External Dependencies**: None (Zero-Dependency Profile)
 
 ---
 
-## 🛠 Requirements & Integration
+## 🗺 Module Architectural Blueprint & Navigation
 
-The package is a fully standalone distribution layer containing zero external runtime package dependencies.
+Complete structural documentation and specifications for every individual utility are isolated within dedicated `.md` files inside the `Documentation/en/` directory. Use the index table below to navigate to the core documentation layout branches:
 
-* **Swift Tools Version**: 6.0+
-* **Minimum Platform Footprint**: iOS 16.0+, macOS 13.0+, watchOS 9.0+, tvOS 16.0+
+| Utility / Documentation File | Associated Tokens / Structural Types | Functional Responsibility & Technical Scope |
+| :--- | :--- | :--- |
+| 🛡 [Locking.md](Documentation/en/Locking.md) | `Locking`, `RWLocking` | Unified synchronization interface abstraction layer for native platform locking primitives. |
+| ⛓ [Lists.md](Documentation/en/Lists.md) | `List<T, Lock>`, `+>`, `<+`, `^` | Doubly linked list featuring **O(1)** boundary mutations, predictive Lock Dropping iteration algorithms, and L-Shape data-flow mechanics. |
+| 📦 [Cache.md](Documentation/en/Cache.md) | `Cache<K, V>`, `Costable` | Thread-safe object wrapper augmenting `NSCache` to support Swift value types, eviction interception callbacks, and cost limits. |
+| 📝 [Version.md](Documentation/en/Version.md) | `Version<Stage>`, `VersionFormatter` | Modular software version parsing and serialization engine utilizing Abstract Syntax Tree (AST) pattern compilation and One-Hot selection rules. |
+| 💾 [Storage.md](Documentation/en/Storage.md) | `PersistentStorage`, `FileStorage` | Persistence abstraction layer (Repository Pattern) managing structured file-system atomic operations and clean preference mappings. |
+| ⚙️ [Coding.md](Documentation/en/Coding.md) | `CustomizableCodingKeyMapping` | Metatype-driven `Codable` extensions enabling call-site type inference without `T.self`, Fluent API configurations, and case conversions. |
+| 📊 [DictionaryRawRepresentable.md](Documentation/en/DictionaryRawRepresentable.md) | `resolveRepresentation` | Functional hash-table transformations, allocation-free lazy sequences, and bidirectional primitive-to-enumeration domain mapping. |
+| 🔍 [DataValidation.md](Documentation/en/DataValidation.md) | `StringValidator`, `EmailValidator` | Strict text validation architecture wrapping `NSDataDetector` and enforcing complete pattern matching bounds via `matchesFullBoundary`. |
+| 🕸 [WeakDictionary.md](Documentation/en/WeakDictionary.md) | `WeakDictionary<K, V>` | Concurrent table infrastructure storing elements via weak relationships (`weak`) paired with automated lazy ARC node purging. |
+| 🌐 [Localization.md](Documentation/en/Localization.md) | `Bundle.UIKit`, `localized()` | Inverted string localization patterns, native `UIKit` platform translation recycling, and synchronous dictionary export diagnostics. |
+| 📑 [BundleMetadata.md](Documentation/en/BundleMetadata.md) | `Bundle.appVersion`, `Info.plist` | Performance-optimized inlinable short-hands for reading application target attributes directly from internal bundle manifests. |
+| 💠 [Emptiable.md](Documentation/en/Emptiable.md) | `Emptiable`, `Blankable`, `~?`, `~!` | Core protocols establishing baseline emptiness characteristics and inline operators eliminating runtime if/else optional unwrapping. |
 
-### Integration via Swift Package Manager
+---
 
-Declare the dependency boundary within your structural `Package.swift` file:
+## 🛠 Installation
+
+Integrate the framework into your codebase by appending SwanCore straight into your active `Package.swift` dependency matrix:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SwanSuite/SwanCore", from: "0.1.0")
+    .package(url: "https://github.com/SwanSuite/SwanCore", from: "1.0.0")
 ]
 ```
 
-Securely anchor the library product target to your application module requirements:
+Then map the library module into your target execution layer configuration block:
 
 ```swift
-.target(
-    name: "MyApplicationModule",
-    dependencies: ["SwanCore"]
-)
+targets: [
+    .target(
+        name: "MyApplicationModule",
+        dependencies: ["SwanCore"]
+    )
+]
 ```

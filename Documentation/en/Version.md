@@ -1,64 +1,45 @@
-# SwanCore Versioning Engine
+# SwanCore Versioning Utilities (Data Models & Formatting Helpers)
 
-A high-performance, memory-efficient, and highly extensible generic software versioning framework written in modern Swift. 
+This component provides a collection of lightweight data structures and utilities designed for representing, formatting, and parsing software versions. The solution decouples immutable core version properties from volatile deployment lifecycle contexts using Swift generics and Abstract Syntax Tree (AST) layout evaluation.
 
-Unlike traditional flat versioning tools, **SwanCore** strictly separates the unchangeable industry core primitives (`major.minor.patch`) from the volatile, project-specific deployment lifecycle pipelines (pre-releases, branches, builds, CI/CD metadata) using advanced Swift generics and type-safe abstract layout trees.
+## Architecture and Core Components
 
----
-
-## 🚀 Key Features
-
-- **Zero-Allocation Core Primitives**: Immutable structural coordinates backed by optimized memory layout cascades.
-- **Generic Lifecycle Contexts (`VersionStage`)**: Swap contexts at compile-time—from bare releases (`VoidVersionStage`) to full Semantic Versioning 2.0.0 (`CanonicalVersionStage`), or completely custom enterprise pipelines.
-- **Bi-Directional Schema Symmetry**: Use a single tokenized pattern template string for **both** formatting a model into a string and parsing a string back into a structural type.
-- **Strict AST Compiler State Machine**: Fast, linear character stream scanner executing complex nesting validation rules (AND/OR priority evaluation) without regular expressions or performance bottlenecks.
-- **Mutually Exclusive Selections (`select`)**: Native support for strict One-Hot alternative pipelines through structural pipe configurations (`[ A | B ]`).
+The utility architecture consists of three logical layers:
+1. **Data Containers (`Version<Stage>`)**: A generic structure encapsulating primary numeric coordinates (`major`, `minor`, `patch`) alongside a polymorphic lifecycle wrapper (`Stage`).
+2. **Lifecycle Strategies (`VersionStage`)**: A protocol defining behaviors for pre-release and build metadata tracking. It includes two concrete implementations out of the box:
+   * `VoidVersionStage` (aliased as `CoreVersion`) — a stateless, zero-allocation stub structure for standard versions lacking extended metadata.
+   * `CanonicalVersionStage` (aliased as `CanonicalVersion`) — a structured model providing full compliance with the SemVer 2.0.0 specification.
+3. **Layout Compilation Engine (`VersionFormatter`)**: A compiler that transforms a tokenized design pattern string into an Abstract Syntax Tree (AST) at initialization time, enabling bidirectional translation (string formatting and reverse text parsing).
 
 ---
 
-## 🛠 Architectural Overview
+## Pattern Syntax Blueprint
 
-The engine acts as a loose-coupling bridge between your structural state data container models and layout presentation requirements:
+The layout configurations for `VersionFormatter` are declared using a template string where uppercase characters preceded by a `%` character are evaluated as dynamic data tokens. All static punctuation markers, spaces, and literal characters are processed as strict layout invariants.
 
-```text
-[ Raw String Input ] ──► (VersionFormatter Scanner) ──► [ Token Dictionary ]
-                                                                │
-                                                         (TokensComposable)
-                                                                ▼
-[ Stylized Output ]  ◄── (VersionFormatter Engine)  ◄── [ Generic Version<Stage> ]
-```
+### Token Identifiers
+* `%MJ` — **Major**: Dominant primary release integer index (`major` component).
+* `%MN` — — **Minor**: Secondary feature enhancement iteration index (`minor` component).
+* `%P`  — **Patch**: Tertiary bug correction deployment sequence index (`patch` component).
+* `%SI` — **Stage Identifier**: Pre-release milestone string identifier (`alpha`, `beta`, `rc` — `stage.identifier` component).
+* `%SV` — **Stage Version**: Incremental tracking step progressing within the active milestone (`stage.version` component).
+* `%B`  — **Build**: Technical machine compilation sequence tracking marker (`stage.build` component).
 
----
-
-## 📝 Format Pattern Blueprint Syntax
-
-Templates utilize dedicated uppercase layout markers preceded by a `%` character. All static punctuation separators (dots, dashes, brackets, spacers) are processed as strict layout invariants.
-
-### 1. Base Framework System Tokens
-- `%MJ` — **Major**: Dominant primary development baseline integer index.
-- `%MN` — **Minor**: Secondary feature enhancement iteration index.
-- `%P`  — **Patch**: Tertiary bug correction deployment sequence index.
-
-### 2. Canonical Stage Tokens (`CanonicalVersionStage`)
-- `%SI` — **Stage Identifier**: Prerelease milestone string name (`alpha`, `beta`, `rc`).
-- `%SV` — **Stage Version**: Incremental tracking step progressing within the active milestone.
-- `%B`  — **Build**: Low-level technical machine compilation sequence tracking marker.
-
-### 3. Structural Condition Boundaries `[...]`
+### Condition Boundaries `[...]`
 Square brackets define hierarchical conditional logical layers:
-- **AND (ALL) Strategy**: If an optional layer directly hosts template tokens, the block evaluates to an active state **only if all immediate layout tokens are explicitly populated** with non-nil parameters.
-- **OR (ANY) Strategy**: If an optional layer hosts nested sub-blocks without immediate root tokens, it delegates active status tracking downwards, preserving visibility if **at least one** child branch remains valid.
+* **AND (ALL) Strategy**: If an optional layer directly hosts template tokens, the block evaluates to an active state **only if all immediate layout tokens are explicitly populated** with non-nil parameters.
+* **OR (ANY) Strategy**: If an optional layer hosts nested sub-blocks without immediate root tokens, it delegates active status tracking downwards, preserving visibility if **at least one** child branch remains valid.
 
-### 4. Alternative Pipe Choice Framework `[ A | B ]`
-The pipe operator `|` within a boundary level splits the domain space into mutually exclusive selection branches. The runtime controller applies **strict One-Hot verification metrics**: **exactly one** alternative choice path must evaluate to an active state. If 0 or ≥ 2 branches attempt to render simultaneously, a scheduling conflict is detected, and the entire node safely collapses into an empty stream.
+### Alternative Choice Framework `[ A | B ]`
+The pipe operator `|` within a boundary level splits the domain space into mutually exclusive selection branches. The runtime controller applies **strict One-Hot verification metrics**: **exactly one** alternative choice path must evaluate to an active state. If 0 or ≥ 2 branches attempt to render simultaneously, a scheduling conflict is detected, and the entire node collapses into an empty stream.
 
 ---
 
-## 📦 Core Layout Profiles (Presets)
+## Built-in Layout Profiles (Presets)
 
-SwanCore exposes standard built-in layout configurations via `VersionFormatter`:
+`VersionFormatter` exposes standard built-in layout configurations via predefined static properties:
 
-| Preset | Pattern Structure | Sample Structural Realization Output |
+| Preset | Pattern Structure | Sample Realization Output |
 | :--- | :--- | :--- |
 | `.short` | `%MJ[.%MN][.%P]` | `"1.2.3"` or `"1"` *(trailing zero components are pruned)* |
 | `.medium` | `%MJ.%MN[.%P][[-%SI[.%SV]]\|[ b%B]]` | `"1.2.3-rc1"`, `"1.0 b12"`, or `"2.0"` *(strict alternative selection)* |
@@ -68,15 +49,15 @@ SwanCore exposes standard built-in layout configurations via `VersionFormatter`:
 
 ---
 
-## 💻 Usage Examples
+## Code Examples
 
-### 1. Basic Models & Formats
+### 1. Formatting Data Models
 ```swift
-// Pure version profile layout tracking (Zero-Allocation VoidVersionStage)
-let coreLib = CoreVersion(major: 1, minor: 4, patch: 0, stage: .void)
+// Utilizing pure version tracking without metadata (VoidVersionStage)
+let coreLib = CoreVersion(major: 1, minor: 4, patch: 0)
 print(coreLib.formatted(.short)) // Outputs: "1.4"
 
-// Comprehensive standard SemVer layout configuration profile
+// Utilizing comprehensive standard SemVer layout configuration profile
 let stage = CanonicalVersionStage(identifier: .beta, version: 3, build: 412)
 let appVersion = CanonicalVersion(major: 2, minor: 0, patch: 1, stage: stage)
 
@@ -85,7 +66,7 @@ print(appVersion.formatted(.medium)) // Outputs: "2.0.1-beta.3" (build omitted b
 ```
 
 ### 2. Powerful Bi-Directional Mirror Parsing
-Thanks to the unified `TokensComposable` protocol, models can seamlessly synthesize their states out of text descriptions matching any valid formatting mask:
+The parser decompiles text streams using the pre-compiled AST hierarchy, employing local stream rollbacks if structural parsing rules fail:
 
 ```swift
 // Direct string parsing via type-safe LosslessStringConvertible (employing .medium by default)
@@ -103,20 +84,22 @@ if let rawTokens = gitTagFormatter.parse("release-v1.8") {
 }
 ```
 
-### 3. Type-Safe Evolutionary Sorting Matrix
-```swift
-let v1 = CanonicalVersion(major: 1, minor: 0, stage: CanonicalVersionStage(identifier: .alpha, version: 5))
-let v2 = CanonicalVersion(major: 1, minor: 0, stage: CanonicalVersionStage(identifier: .releaseCandidate, version: 1))
-let v3 = CanonicalVersion(major: 1, minor: 0, stage: CanonicalVersionStage(identifier: .release)) // or nil stage
+### 3. Type-Safe Evolutionary Sorting
+The `Version` structure implements `Comparable`. Precedence validation routes sequentially through components: `major` -> `minor` -> `patch` -> `stage`.
 
-print(v1 < v2)  // Outputs: true  (alpha < rc)
-print(v2 < v3)  // Outputs: true  (rc < release/stable)
-print(v3 == CanonicalVersion(major: 1, minor: 0, patch: 0)) // Outputs: true (nil normalization comparison checks)
+```swift
+let v1 = CanonicalVersion(major: 1, minor: 0, stage: .init(identifier: .alpha, version: 5))
+let v2 = CanonicalVersion(major: 1, minor: 0, stage: .init(identifier: .releaseCandidate, version: 1))
+let v3 = CanonicalVersion(major: 1, minor: 0, stage: .init(identifier: .release))
+
+print(v1 < v2)  // Outputs: true (alpha < rc)
+print(v2 < v3)  // Outputs: true (rc < release/stable)
+print(v3 == CanonicalVersion(major: 1, minor: 0, patch: 0)) // Outputs: true (nil normalization checks)
 ```
 
 ---
 
-## 🔒 Thread Safety and Performance
+## Thread Safety and Computational Complexity
 
-- **`Sendable` Compliance**: All structural data components, layout format types, internal abstract tree states (`AST.Node`), and validation context nodes strictly declare and maintain complete `Sendable` conformity.
-- **Linear Compilation Performance**: Complex layout design template pattern operations compile strictly **once** at token engine validation initialization time into lightweight execution nodes, transforming formatting and reverse scanning loops into high-velocity, heap-free CPU branch cascades.
+* **Type Concurrency Safety**: All data containers (`Version`, `VersionFormatter`), internal representations (`AST.Node`), and validation sub-components explicitly declare complete `Sendable` conformity. This allows safe usage within Swift 6 Strict Concurrency asynchronous loops without external thread locks.
+* **Performance Overhead Optimization**: Template evaluation pattern operations compile strictly **once** during `VersionFormatter` initialization. Subsequent serialization or reverse parsing execution operations run within linear time complexity O(N) relative to string length, bypassing standard regular expression engines and operating without heap allocation overhead for intermediate tree components.

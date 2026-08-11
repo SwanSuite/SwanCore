@@ -70,8 +70,7 @@ public final class PosixRWLock: RWLocking, @unchecked Sendable {
 ///
 /// **Warning:** This implementation is completely thread-unsafe.
 /// Designed for deterministic single-threaded benchmarks to completely factor out lock overhead.
-@frozen
-public struct VoidRWLock: RWLocking {
+@frozen public struct VoidRWLock: RWLocking {
 
     /// Initializes a new instance of `VoidRWLock`.
     @inlinable

@@ -1,86 +1,65 @@
 ![Logo](SwanCore.png)
 
-**SwanCore** — это низкоуровневый, высокопроизводительный системный тулкит, являющийся фундаментом экосистемы **SwanSuite**. Пакет разработан на чистом Swift с прицелом на максимальную скорость рантайма, детерминированность памяти и полную совместимость со строгой многопоточностью **Swift 6 Strict Concurrency**.
+[![Swift 6 Concurrency](https://img.shields.io/badge/Swift_6-Concurrency_Ready-52B1F4.svg)](https://developer.apple.com/documentation/swift/adoptingswift6)
+[![SPM Compatible](https://img.shields.io/badge/Swift_Package_Manager-compatible-52B1F4.svg)](https://swift.org/package-manager/)
+![Platforms](https://img.shields.io/badge/platforms-macOS_%7C_iOS_%7C_tvOS_%7C_watchOS-lightgrey.svg)
+![Repository Size](https://img.shields.io/github/repo-size/SwanSuite/SwanCore-lightgrey.svg)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/SwanSuite/SwanCore?color=52B1F4)
 
-Продукт ориентирован на коммерческую и промышленную разработку, где критически важны отказоустойчивость, предсказуемость поведения графов объектов и отсутствие накладных расходов памяти.
+[![Language](https://img.shields.io/badge/Language-English-EBAC73.svg)](README.md)
 
----
+Низкоуровневый пакет вспомогательных инструментов, легковесных моделей данных и расширений для языка Swift, оптимизированный для обеспечения высокой производительности, минимального выделения памяти и строгой потокобезопасности в модели многопоточности Swift 6 Strict Concurrency.
 
-## 🏗 Локализация документации
-
-Полный пакет подробной технической документации по каждому компоненту на русском языке находится в директории:
-
-* 🇺🇸 **Английская версия**: [Documentation/en/](Documentation/en/)
-* 🇷🇺 **Русская версия**: [Documentation/ru/](Documentation/ru/)
-
----
-
-## 🧩 Ключевые лотки ядра (Modules Overview)
-
-### 1. ⚙️ Базовые примитивы ([Emptiable.md](Documentation/ru/Emptiable.md))
-Вводит концепт логической пустоты объектов через протокол `Emptiable` и предоставляет кастомные shorthand-операторы:
-* **`~! `** (постфиксный унрап) — безопасное извлечение опционала со сбросом в дефолтное пустое состояние типа без краша рантайма (`nilInt~! == 0`).
-* **`~? `** (инфиксное слияние) — цепочечный фоллбэк на альтернативное значение, если левая часть пуста (`"" ~? "fallback" == "fallback"`). Снабжен встроенной оптимизацией для оптического поведения `CGRect`.
-
-### 2. ⚡ Структуры хранения и коллекции ([Cache.md](Documentation/ru/Cache.md) & [Lists.md](Documentation/ru/Lists.md))
-Набор потокобезопасных (`Sendable`) контейнеров, защищенных быстрыми системными локами `OSAllocatedUnfairLock`:
-* **`Cache`** — строго типизированная обертка над `NSCache` с поддержкой протокола контроля физического веса данных в байтах (`Costable`).
-* **`WeakDictionary`** — словарь, удерживающий значения по слабой ссылке (`weak`) с ленивой автозачисткой пустых нод во время чтения.
-* **`MapTable`** — тип-безопасный мост к `NSMapTable` для построения гибких матриц удержания (`weak-to-strong`, `strong-to-weak`).
-* **`WeakList` & `RetainList`** — двусвязные списки с перегруженным потоковым синтаксисом (`<+`, `+>`, `^`). Реализуют **Lock-Free чтение**, позволяя выполнять параллельный обход сотен тысяч элементов на «живую» без единой блокировки.
-
-### 3. 📝 Утилиты системных бандлов ([BundleMetadata.md](Documentation/ru/BundleMetadata.md) & [BundleLocalization.md](Documentation/ru/BundleLocalization.md))
-Инструменты для извлечения информации о хост-приложении:
-* Быстрый типизированный доступ к версиям, сборкам и именам исполняемых файлов.
-* Движок динамической локализации строк с защитой от дата-рейсов через кэширование бэктрейса под управлением `OSAllocatedUnfairLock`.
-
-### 4. 🔗 Преобразования регистров и сериализация ([Coding.md](Documentation/ru/Coding.md))
-Расширения для нативного `Codable` на базе вывода типов (`Type Inference`):
-* Избавляет от написания `T.self` при кодировании/декодировании.
-* Вводит Fluent API (Builder) для цепочечной настройки кодеров.
-* Реализует кастомные стратегии `.convertFromSnakeCaseExtended` и `.convertToScreamingSnakeCase` через протокол `CustomizableCodingKeyMapping`, предотвращая игнорирование ручных правил `CodingKeys` системными парсерами Apple.
-
-### 5. 🔬 Строгая валидация данных ([DataValidation.md](Documentation/ru/DataValidation.md))
-Унифицированная архитектура проверки текстовых потоков (Email, Телефонные номера, Ссылки):
-* Построена на базе `NSDataDetector`.
-* Вводит жесткий контроль полных границ диапазона (`matchesFullBoundary`), полностью исключая ложноположительные срабатывания на загрязненных строках.
-* Все стратегии валидации являются `Hashable` по своему уникальному контекстному `id`, что позволяет использовать их как ключи словарей для динамического роутинга ошибок UI-слоя.
-
-### 6. 🔀 Маппинг перечислений ([DictionaryRawRepresentable.md](Documentation/ru/DictionaryRawRepresentable.md))
-Сложная дженерик-система `resolveRepresentation()` для взаимной конвертации словарей между строго типизированными перечислениями (`enum: RawRepresentable`) и их сырыми представлениями. Автоматически отсекает битые ноды и разворачивает глубокие опционалы. Включает бескомпромиссный метод `lazyCompactMapToDictionary` для zero-allocation трансформаций.
-
-### 7. 💾 Промышленный персистенс ([Storage.md](Documentation/ru/Storage.md))
-Унифицированный интерфейс хранилищ `PersistentStorage` (Repository Pattern), разделяющий сырые байты и дженерик-сборку объектов:
-* Из коробки расширяет `UserDefaults` под плоские структуры конфигураций.
-* Реализует атомарное дисковое хранилище `FileStorage` с флагом `.atomic` (гарантирует защиту базы данных от превращения в битый мусор при внезапном выключении устройства во время offline-работы в тяжелых условиях).
-
-### 8. 📌 Семантическое версионирование ([Version.md](Documentation/ru/Version.md))
-Lossless-парсер и каскадный оценщик версий (`Comparable`), использующий числовые веса стадий жизненного цикла ПО (`alpha < beta < rc < release`). Содержит декларативный шаблонизатор строк `VersionFormatter` на регулярных выражениях, поддерживающий умное вырезание опциональных блоков с помощью квадратных скобок `[...]`.
+Пакет не содержит внешних зависимостей и предназначен для решения рутинных инфраструктурных задач без накладных расходов на динамическую диспетчеризацию времени выполнения.
 
 ---
 
-## 🛠 Требования и интеграция
+## 💻 Системные требования и среда
+* **Язык**: Swift 6.0+ (Strict Concurrency Ready)
+* **Минимальные платформы**: iOS 16.0+ / macOS 13.0+ / tvOS 16.0+ / watchOS 9.0+
+* **Менеджер зависимостей**: Swift Package Manager (SPM)
+* **Внешние зависимости**: Отсутствуют (Zero-Dependency Profile)
 
-Пакет полностью автономен и не имеет внешних зависимостей.
+---
 
-* **Swift Tools Version**: 6.0+
-* **Минимальные платформы**: iOS 16.0+, macOS 13.0+, watchOS 9.0+, tvOS 16.0+
+## 🗺 Архитектурная карта модулей и навигация
 
-### Интеграция через Swift Package Manager
+Полная техническая документация по каждому компоненту распределена по изолированным файлам в директории `Documentation/ru/`. Ниже приведена таблица соответствия модулей и зон их ответственности со ссылками на проектную спецификацию:
 
-Добавьте зависимость в ваш `Package.swift`:
+| Компонент / Файл документации | Системный токен / Типы данных | Краткое техническое описание и зона ответственности |
+| :--- | :--- | :--- |
+| 🛡 [Locking.md](Documentation/ru/Locking.md) | `Locking`, `RWLocking` | Унифицированный интерфейсный слой для абстрагирования примитивов потокобезопасности и системных блокировок. |
+| ⛓ [Lists.md](Documentation/ru/Lists.md) | `List<T, Lock>`, `+>`, `<+`, `^` | Двусвязный список с константными мутациями границ **O(1)**, итератором со сбросом блокировок (Lock Dropping) и мнемоникой L-Shape. |
+| 📦 [Cache.md](Documentation/ru/Cache.md) | `Cache<K, V>`, `Costable` | Потокобезопасная объектная обертка над `NSCache` для поддержки Value-типов, перехвата выселения данных и лимита стоимости. |
+| 📝 [Version.md](Documentation/ru/Version.md) | `Version<Stage>`, `VersionFormatter` | Модель версионирования программного обеспечения на базе компиляции синтаческого шаблона в абстрактное дерево (AST). |
+| 💾 [Storage.md](Documentation/ru/Storage.md) | `PersistentStorage`, `FileStorage` | Слой абстракции сохранения данных (Repository Pattern) с бэкендами `UserDefaults` (плоские ключи) и `FileStorage` (атомарная запись). |
+| ⚙️ [Coding.md](Documentation/ru/Coding.md) | `CustomizableCodingKeyMapping` | Вспомогательные расширения `Codable` для автовывода типов без `T.self`, Fluent API и сквозной трансформации регистров ключей. |
+| 📊 [DictionaryRawRepresentable.md](Documentation/ru/DictionaryRawRepresentable.md) | `resolveRepresentation` | Функциональные трансформации словарей, безалокационные ленивые стримы и типобезопасный мост для перечислений. |
+| 🔍 [DataValidation.md](Documentation/ru/DataValidation.md) | `StringValidator`, `EmailValidator` | Строгая валидация текстовых данных на базе `NSDataDetector` с проверкой полного совпадения границ (`matchesFullBoundary`). |
+| 🕸 [WeakDictionary.md](Documentation/ru/WeakDictionary.md) | `WeakDictionary<K, V>` | Потокобезопасная коллекция со слабыми ссылками (`weak`) на элементы и ленивой очисткой удаленных ARC-подсистемой узлов. |
+| 🌐 [Localization.md](Documentation/ru/Localization.md) | `Bundle.UIKit`, `localized()` | Инвертированный синтаксис локализации строк, интеграция с нативными переводами `UIKit` и инструмент экспорта таблиц. |
+| 📑 [BundleMetadata.md](Documentation/ru/BundleMetadata.md) | `Bundle.appVersion`, `Info.plist` | Вычисляемые инлайновые свойства-хелперы для атомарного извлечения параметров конфигурационного манифеста приложения. |
+| 💠 [Emptiable.md](Documentation/ru/Emptiable.md) | `Emptiable`, `Blankable`, `~?`, `~!` | Базовые протоколы для детерминации пустого состояния типа и операторы безопасного разворачивания опционалов без рантайм-ветвлений. |
+
+---
+
+## 🛠 Быстрый старт (Установка)
+
+Интеграция пакета осуществляется через Swift Package Manager. Добавьте зависимость в ваш файл `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SwanSuite/SwanCore", from: "0.1.0")
+    .package(url: "https://github.com/SwanSuite/SwanCore", from: "1.0.0")
 ]
 ```
 
-И подключите таргет к вашему модулю:
+И подключите целевой таргет в блок конфигурации модуля:
 
 ```swift
-.target(
-    name: "MyApplicationModule",
-    dependencies: ["SwanCore"]
-)
+targets: [
+    .target(
+        name: "MyApplicationModule",
+        dependencies: ["SwanCore"]
+    )
+]
 ```
