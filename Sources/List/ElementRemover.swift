@@ -8,31 +8,34 @@
 
 import Foundation
 
-/// A capability contract layout specifying explicit, isolated node deletion mechanics.
-///
-/// Encapsulates structural unlinking algorithms, enforcing strict write-isolation policies
-/// to safely manipulate collection boundaries across highly concurrent environments.
-public protocol ElementRemover: AnyObject, HasHead, HasTail {
+public protocol ElementRemover: AnyObject, HasHead, HasTail where Element: BackwardConnection {
 
-    /// Unlinks a specific structural node from the container topology under execution protection.
-    ///
-    /// - Parameter element: The targeted node instance to be safely excised from the sequence.
-    /// - Complexity: O(1)
     @inlinable @inline(__always)
     func remove(_ element: Element)
 }
 
 public extension ElementRemover where Self: HasRWLock & HasCount {
 
-    /// Default blueprint algorithm executing O(1) synchronized exclusive node deletion.
-    ///
-    /// This implementation enforces absolute write-isolation via `lock.writeLock()`. It guarantees
-    /// that any active multi-threaded readers are locked out during topology mutation passes,
-    /// preventing memory corruption and reference dangling.
     @inlinable @inline(__always)
     func remove(_ element: Element) {
         lock.writeLock()
+        _remove(element)
+        count -= 1
+        lock.unlock()
+    }
 
+    @inlinable @inline(__always)
+    func remove(_ elements: [Element]) {
+        lock.writeLock()
+        for element in elements { _remove(element) }
+        count -= elements.count
+        lock.unlock()
+    }
+}
+
+extension ElementRemover {
+    @inlinable @inline(__always)
+    func _remove(_ element: Element) {
         if let prev = element.prev {
             prev.next = element.next
         } else {
@@ -49,8 +52,5 @@ public extension ElementRemover where Self: HasRWLock & HasCount {
 
         element.next = nil
         element.prev = nil
-
-        count -= 1
-        lock.unlock()
     }
 }

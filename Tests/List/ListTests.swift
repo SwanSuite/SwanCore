@@ -34,7 +34,7 @@ struct ListMutationTests {
     @Test("Validate head and tail resetting to nil upon removing the last remaining element")
     func testBoundaryResetOnEmptying() async throws {
         // Сценарий 1: Извлечение единственного элемента с головы списка (popFront)
-        let list1 = List<Int, VoidRWLock>()
+        let list1 = List<Int, VoidLock>()
         list1.pushBack(42)
 
         #expect(list1.head != nil)
@@ -48,7 +48,7 @@ struct ListMutationTests {
         #expect(list1.count == 0)
 
         // Сценарий 2: Извлечение единственного элемента с хвоста списка (popBack)
-        let list2 = List<Int, VoidRWLock>()
+        let list2 = List<Int, VoidLock>()
         list2.pushBack(24)
 
         let _: Int? = list2.popBack()
@@ -58,7 +58,7 @@ struct ListMutationTests {
         #expect(list2.count == 0)
 
         // Сценарий 3: Прямое принудительное удаление элемента через ElementRemover
-        let list3 = List<Int, VoidRWLock>()
+        let list3 = List<Int, VoidLock>()
         list3.pushBack(7)
 
         // Ручной захват лока для обхода ограничения Sendable в withReadLock
@@ -77,7 +77,7 @@ struct ListMutationTests {
 
     @Test("Verify count invariant and node connections under sequential operations")
     func testSequentialMetricsAndConnections() async throws {
-        let list = List<Int, VoidRWLock>()
+        let list = List<Int, VoidLock>()
 
         // Проверяем начальное состояние
         #expect(list.count == 0)
@@ -116,7 +116,7 @@ struct ListMutationTests {
 
     @Test("Ensure edge case safety when popping from an empty collection")
     func testOperationsOnEmptyList() async throws {
-        let list = List<Int, VoidRWLock>()
+        let list = List<Int, VoidLock>()
 
         // Попытки извлечения из пустого списка возвращают явный nil
         let poppedFront: Int? = list.popFront()
@@ -131,7 +131,7 @@ struct ListMutationTests {
 
     @Test("Validate internal node unlinking inside intermediate positions via ElementRemover")
     func testIntermediateElementRemoval() async throws {
-        let list = List<Int, VoidRWLock>()
+        let list = List<Int, VoidLock>()
         list.pushBack(100)
         list.pushBack(200)
         list.pushBack(300)
