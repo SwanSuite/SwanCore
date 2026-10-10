@@ -6,6 +6,8 @@
 //  Copyright © 2026 Anobisoft. Licensed under the MIT License.
 //
 
+import Foundation
+import os
 
 /// A structural layout contract specifying that the conforming container owns a unique, non-copyable exclusive lock.
 ///
@@ -56,4 +58,33 @@ extension Locking {
         defer { self.unlock() }
         return try body()
     }
+}
+
+
+// MARK: - Conformances
+
+extension OSAllocatedUnfairLock: Locking where State == Void {}
+
+extension NSLock: Locking {
+    /// Tries to acquire the standard lock instantly.
+    @inlinable @inline(__always) public borrowing func lockIfAvailable() -> Bool { `try`() }
+}
+
+public final class Mutex: Locking, @unchecked Sendable {
+    @usableFromInline internal var mutex = pthread_mutex_t()
+
+    @inlinable public init() { pthread_mutex_init(&mutex, nil) }
+    @inlinable deinit { pthread_mutex_destroy(&mutex) }
+
+    @inlinable @inline(__always) public borrowing func lock() { pthread_mutex_lock(&mutex) }
+    @inlinable @inline(__always) public borrowing func unlock() { pthread_mutex_unlock(&mutex) }
+    @inlinable @inline(__always) public borrowing func lockIfAvailable() -> Bool { pthread_mutex_trylock(&mutex) == 0 }
+}
+
+/// A zero-cost, non-copyable dummy lock structure designed for single-threaded benchmarks.
+@frozen public struct VoidLock: Locking {
+    @inlinable @inline(__always) public init() {}
+    @inlinable @inline(__always) borrowing public func lock() {}
+    @inlinable @inline(__always) borrowing public func unlock() {}
+    @inlinable @inline(__always) borrowing public func lockIfAvailable() -> Bool { true }
 }

@@ -6,6 +6,7 @@
 //  Copyright © 2026 SwanSuite. Licensed under the MIT License.
 //
 
+import os
 
 /// A structural layout contract specifying that the conforming container owns a unique, non-copyable shared-exclusive lock.
 ///
@@ -78,4 +79,47 @@ extension RWLocking {
         defer { self.unlock() }
         return try body()
     }
+}
+
+
+// MARK: - Conformances
+
+// High-performance Exclusive Fallback for Apple's native lock under RWLocking requirements.
+extension OSAllocatedUnfairLock: RWLocking where State == Void {
+
+    /// Maps shared read access directly to the native exclusive lock path.
+    @inlinable @inline(__always)
+    public borrowing func readLock() { lock() }
+
+    /// Maps exclusive write access directly to the native exclusive lock path.
+    @inlinable @inline(__always)
+    public borrowing func writeLock() { lock() }
+
+    /// Tries to acquire a shared read lock exclusively without blocking.
+    @inlinable @inline(__always)
+    public borrowing func tryReadLock() -> Bool { lockIfAvailable() }
+
+    /// Tries to acquire an exclusive write lock without blocking.
+    @inlinable @inline(__always)
+    public borrowing func tryWriteLock() -> Bool { lockIfAvailable() }
+}
+
+public final class RWLock: RWLocking, @unchecked Sendable {
+    @usableFromInline internal var rwlock = pthread_rwlock_t()
+
+    @inlinable public init() { pthread_rwlock_init(&rwlock, nil) }
+    deinit { pthread_rwlock_destroy(&rwlock) }
+
+    @inlinable @inline(__always) public borrowing func readLock() { pthread_rwlock_rdlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func writeLock() { pthread_rwlock_wrlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func unlock() { pthread_rwlock_unlock(&rwlock) }
+    @inlinable @inline(__always) public borrowing func tryReadLock() -> Bool { pthread_rwlock_tryrdlock(&rwlock) == 0 }
+    @inlinable @inline(__always) public borrowing func tryWriteLock() -> Bool { pthread_rwlock_trywrlock(&rwlock) == 0 }
+}
+
+extension VoidLock: RWLocking {
+    @inlinable @inline(__always) public borrowing func readLock() {}
+    @inlinable @inline(__always) public borrowing func writeLock() {}
+    @inlinable @inline(__always) public borrowing func tryReadLock() -> Bool { true }
+    @inlinable @inline(__always) public borrowing func tryWriteLock() -> Bool { true }
 }
