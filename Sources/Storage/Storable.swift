@@ -78,7 +78,6 @@ public extension Storable where Self: Codable {
     /// - Throws: A decoding error if data properties do not match the expected type schema.
     @inlinable
     init?(id: String, data: Data) throws {
-        // Возвращаем твой базовый метод десериализации
         self = try Self.decode(data: data)
     }
 
