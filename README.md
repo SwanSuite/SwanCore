@@ -1,5 +1,11 @@
 ![Logo](SwanCore.png)
 
+[![Swift 6 Concurrency](https://img.shields.io/badge/Swift_6-Concurrency_Ready-52B1F4.svg)](https://developer.apple.com/documentation/swift/adoptingswift6)
+[![SPM Compatible](https://img.shields.io/badge/Swift_Package_Manager-compatible-52B1F4.svg)](https://swift.org/package-manager/)
+![Platforms](https://img.shields.io/badge/platforms-macOS_%7C_iOS_%7C_tvOS_%7C_watchOS-lightgrey.svg)
+![Repository Size](https://img.shields.io/github/repo-size/SwanSuite/SwanCore-lightgrey.svg)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/SwanSuite/SwanCore?color=52B1F4)
+
 [![Language](https://img.shields.io/badge/Language-%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-52B1F4.svg)](README.ru.md)
 
 A low-overhead, zero-dependency package providing lightweight data structures, types, and foundational extensions for Swift. The entire architecture is optimized for high throughput, minimal heap allocation, and absolute compile-time thread safety under the Swift 6 Strict Concurrency model.
