@@ -29,7 +29,6 @@
 | Компонент / Файл документации | Системный токен / Типы данных | Краткое техническое описание и зона ответственности |
 | :--- | :--- | :--- |
 | 🛡 [Locking.md](Documentation/ru/Locking.md) | `Locking`, `RWLocking` | Унифицированный интерфейсный слой для абстрагирования примитивов потокобезопасности и системных блокировок. |
-| ⛓ [Lists.md](Documentation/ru/Lists.md) | `List<T, Lock>`, `+>`, `<+`, `^` | Двусвязный список с константными мутациями границ **O(1)**, итератором со сбросом блокировок (Lock Dropping) и мнемоникой L-Shape. |
 | 📦 [Cache.md](Documentation/ru/Cache.md) | `Cache<K, V>`, `Costable` | Потокобезопасная объектная обертка над `NSCache` для поддержки Value-типов, перехвата выселения данных и лимита стоимости. |
 | 📝 [Version.md](Documentation/ru/Version.md) | `Version<Stage>`, `VersionFormatter` | Модель версионирования программного обеспечения на базе компиляции синтаческого шаблона в абстрактное дерево (AST). |
 | 💾 [Storage.md](Documentation/ru/Storage.md) | `PersistentStorage`, `FileStorage` | Слой абстракции сохранения данных (Repository Pattern) с бэкендами `UserDefaults` (плоские ключи) и `FileStorage` (атомарная запись). |

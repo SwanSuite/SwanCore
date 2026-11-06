@@ -29,7 +29,6 @@ Complete structural documentation and specifications for every individual utilit
 | Utility / Documentation File | Associated Tokens / Structural Types | Functional Responsibility & Technical Scope |
 | :--- | :--- | :--- |
 | 🛡 [Locking.md](Documentation/en/Locking.md) | `Locking`, `RWLocking` | Unified synchronization interface abstraction layer for native platform locking primitives. |
-| ⛓ [Lists.md](Documentation/en/Lists.md) | `List<T, Lock>`, `+>`, `<+`, `^` | Doubly linked list featuring **O(1)** boundary mutations, predictive Lock Dropping iteration algorithms, and L-Shape data-flow mechanics. |
 | 📦 [Cache.md](Documentation/en/Cache.md) | `Cache<K, V>`, `Costable` | Thread-safe object wrapper augmenting `NSCache` to support Swift value types, eviction interception callbacks, and cost limits. |
 | 📝 [Version.md](Documentation/en/Version.md) | `Version<Stage>`, `VersionFormatter` | Modular software version parsing and serialization engine utilizing Abstract Syntax Tree (AST) pattern compilation and One-Hot selection rules. |
 | 💾 [Storage.md](Documentation/en/Storage.md) | `PersistentStorage`, `FileStorage` | Persistence abstraction layer (Repository Pattern) managing structured file-system atomic operations and clean preference mappings. |
